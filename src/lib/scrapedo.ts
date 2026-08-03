@@ -34,13 +34,15 @@ async function fetchPage(
   placeId: string,
   token: string,
   num: number,
-  pageToken?: string
+  pageToken?: string,
+  sortBy?: string
 ): Promise<ScrapeDoPage> {
   const url = new URL(ENDPOINT);
   url.searchParams.set('token', token);
   url.searchParams.set('place_id', placeId);
   url.searchParams.set('num', String(num));
   if (pageToken) url.searchParams.set('next_page_token', pageToken);
+  if (sortBy) url.searchParams.set('sort_by', sortBy);
 
   // Per docs: a transient 502 on a page that should exist is recoverable — retry once.
   let lastError: Error | null = null;
@@ -59,7 +61,8 @@ async function fetchPage(
 export async function fetchAllScrapeDoReviews(
   placeId: string,
   token: string,
-  maxReviews = 40
+  maxReviews = 40,
+  sortBy?: string
 ): Promise<{
   reviews: ScrapeDoReview[];
   place_info?: ScrapeDoPlaceInfo;
@@ -72,7 +75,7 @@ export async function fetchAllScrapeDoReviews(
 
   while (all.length < maxReviews) {
     const num = Math.min(20, maxReviews - all.length);
-    const page = await fetchPage(placeId, token, num, pageToken);
+    const page = await fetchPage(placeId, token, num, pageToken, sortBy);
     fetchedPages += 1;
 
     if (!placeInfo && page.place_info) placeInfo = page.place_info;

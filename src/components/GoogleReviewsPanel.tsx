@@ -18,14 +18,19 @@ function Avatar({
   size: number;
   show: boolean;
 }) {
+  const [failed, setFailed] = useState(false);
+
   if (!show) return null;
   const initial = name.charAt(0).toUpperCase();
 
-  if (photoUrl) {
+  if (photoUrl && !failed) {
     return (
       <img
         src={photoUrl}
         alt={name}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
         style={{
           width: size,
           height: size,
@@ -105,7 +110,16 @@ export function GoogleReviewsPanel({
   const filtered = reviews
     .filter((r) => r.rating >= config.minRating)
     .filter((r) => !config.excludedReviewIds.includes(r.id))
+    .filter((r) => {
+      if (config.imageFiltering === 'images_only') return (r.images?.length ?? 0) > 0;
+      if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
+      return true;
+    })
     .sort((a, b) => {
+      if (config.imageFiltering === 'images_first') {
+        const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
+        if (imgDiff !== 0) return imgDiff;
+      }
       if (config.sortBy === 'highest_rating') return b.rating - a.rating;
       if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
       return 0;
@@ -283,15 +297,14 @@ export function GoogleReviewsPanel({
               </div>
             </div>
           ))}
-        </div>
 
-        {/* Load more */}
-        {hasMore && (
-          <div style={{ padding: '20px', borderTop: `1px solid ${config.drawerCardBorderColor}` }}>
+          {/* Load more — inline at the end of the list, visible only at the bottom */}
+          {hasMore && (
             <button
               onClick={() => setVisibleCount((c) => c + config.drawerReviewsPerPage)}
               style={{
                 width: '100%',
+                flexShrink: 0,
                 borderRadius: '10px',
                 background: '#DC2626',
                 color: '#000000',
@@ -305,8 +318,8 @@ export function GoogleReviewsPanel({
             >
               Load More
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

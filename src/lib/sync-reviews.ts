@@ -38,11 +38,13 @@ export async function syncBusinessReviews(
     throw new Error(`No managed business found for place_id ${placeId}`);
   }
 
-  // 2. Fetch from Scrape.do (paginated, up to 20 reviews per request)
+  // 2. Fetch from Scrape.do (paginated, up to 20 reviews per request).
+  // highest_rating keeps the cache aligned with widgets that filter "5 stars only".
   const { reviews, place_info, fetchedPages } = await fetchAllScrapeDoReviews(
     placeId,
     token,
-    maxReviews
+    maxReviews,
+    'highest_rating'
   );
 
   // 3. Replace the stored snapshot for this business.

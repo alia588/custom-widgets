@@ -29,6 +29,7 @@ export default async function GoogleReviewsWidgetPage() {
       rating: r.rating,
       text: r.text ?? '',
       relativeTime: r.relative_time ?? '',
+      images: r.images ?? [],
     });
     reviewsByBusiness.set(r.business_id, list);
   }

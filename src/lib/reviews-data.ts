@@ -5,6 +5,7 @@ export interface Review {
   rating: number;
   text: string;
   relativeTime: string;
+  images?: string[];
 }
 
 export interface BusinessInfo {

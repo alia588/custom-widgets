@@ -75,7 +75,7 @@ export function ContentTab({
             {pickerOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPickerOpen(false)} />
-                <div className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl bg-neutral-900 shadow-2xl ring-1 ring-neutral-700">
+                <div className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl bg-black shadow-2xl ring-1 ring-neutral-800">
                   <div className="border-b border-neutral-800 px-3 py-2 text-xs font-medium text-neutral-500">
                     Select a managed business
                   </div>
@@ -153,7 +153,7 @@ export function ContentTab({
                   { value: 'images_first', label: 'Images First' },
                   { value: 'images_only', label: 'Images Only' },
                   { value: 'no_images', label: 'No Images' },
-                  { value: 'off', label: 'Off' },
+                  { value: 'all', label: 'All Reviews' },
                 ]}
               />
             </Field>

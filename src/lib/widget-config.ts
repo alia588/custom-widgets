@@ -2,7 +2,7 @@
 // Mirrors the `widgets` table columns in supabase/migrations/001_initial_schema.sql.
 
 export type SortBy = 'highest_rating' | 'lowest_rating' | 'newest' | 'oldest' | 'most_relevant';
-export type ImageFiltering = 'images_first' | 'images_only' | 'no_images' | 'off';
+export type ImageFiltering = 'images_first' | 'images_only' | 'no_images' | 'all';
 export type BadgeBackgroundType = 'transparent' | 'solid';
 export type Layout = 'centered' | 'horizontal';
 export type Position = 'inline' | 'fixed' | 'absolute';

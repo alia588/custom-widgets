@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Dark editor UI primitives matching the DesignDetail editor screenshots.
@@ -50,28 +50,52 @@ export function Select({
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
   return (
     <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full appearance-none rounded-lg bg-neutral-800 px-3 py-2.5 pr-8 text-sm text-neutral-100 outline-none ring-1 ring-neutral-700 focus:ring-2 focus:ring-neutral-500"
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between rounded-lg bg-black px-3 py-2.5 text-sm text-neutral-100 ring-1 ring-neutral-800 transition-colors hover:bg-neutral-800"
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <svg
-        className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-neutral-500"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        viewBox="0 0 24 24"
-      >
-        <path d="M6 9l6 6 6-6" />
-      </svg>
+        <span className="truncate">{selected?.label ?? value}</span>
+        <svg
+          className={`h-4 w-4 flex-shrink-0 text-neutral-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="editor-scroll absolute right-0 left-0 z-50 mt-2 max-h-64 overflow-y-auto rounded-lg bg-black p-1 shadow-2xl ring-1 ring-neutral-800">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                  o.value === value
+                    ? 'bg-neutral-800 text-white'
+                    : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

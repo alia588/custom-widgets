@@ -133,7 +133,7 @@ export function WidgetEditor({ items }: { items: EditorWidget[] }) {
             onClick={() => setActiveTab(t.id)}
             className={`flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px] transition-colors ${
               activeTab === t.id
-                ? 'bg-neutral-200 text-neutral-900'
+                ? 'bg-neutral-800 text-white'
                 : 'text-neutral-500 hover:bg-neutral-900 hover:text-neutral-300'
             }`}
           >
