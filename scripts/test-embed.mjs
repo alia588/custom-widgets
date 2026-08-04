@@ -1,18 +1,29 @@
 /**
  * End-to-end embed test: simulates an external site (GHL) loading
- * public/widget.js with the DesignDetail snippet markup, then checks that
+ * widget.js with the DesignDetail snippet markup, then checks that
  * the widget fetches live data from the API and renders into Shadow DOM.
  *
- * Usage: node scripts/test-embed.mjs [widgetId]
- * Requires the dev server on localhost:3000.
+ * Usage: node scripts/test-embed.mjs [widgetId] [origin]
+ * origin defaults to http://localhost:3000 (dev server). Pass the deployed
+ * URL to test production, e.g.:
+ *   node scripts/test-embed.mjs 004a7b18-... https://custom-widgets-phi.vercel.app
  */
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 
 const widgetId = process.argv[2] || '004a7b18-6bcc-4b2a-a8f9-454012312690';
-const API_ORIGIN = 'http://localhost:3000';
+const API_ORIGIN = process.argv[3] || 'http://localhost:3000';
 
-const bundle = readFileSync('public/widget.js', 'utf8');
+// Test the bundle actually being served (deployed) when a remote origin is
+// given; otherwise use the local build output.
+const bundle = API_ORIGIN.startsWith('http://localhost')
+  ? readFileSync('public/widget.js', 'utf8')
+  : await (await fetch(`${API_ORIGIN}/widget.js`)).text();
+
+if (!bundle.includes('custom-widgets') && bundle.length < 1000) {
+  console.error('Bundle fetch looks wrong, got:', bundle.slice(0, 200));
+  process.exit(1);
+}
 
 const html = `<!DOCTYPE html>
 <html>
