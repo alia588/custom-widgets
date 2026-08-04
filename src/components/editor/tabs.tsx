@@ -47,27 +47,38 @@ export function ContentTab({
   onSelectBusiness,
 }: TabProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+
+  const q = pickerQuery.trim().toLowerCase();
+  const filteredBusinesses = q
+    ? businesses.filter(
+        (b) => b.name.toLowerCase().includes(q) || b.address.toLowerCase().includes(q)
+      )
+    : businesses;
 
   return (
     <>
       <Section title="Google Business">
         <Card>
           <div className="relative flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-900/50 text-emerald-400">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-900/50 text-emerald-400">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M5 13l4 4L19 7" />
                 </svg>
               </span>
-              <div>
-                <div className="text-sm font-semibold text-neutral-100">{businessName ?? 'Business'}</div>
-                <div className="max-w-[180px] truncate text-xs text-neutral-500">{businessAddress ?? ''}</div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold break-words text-neutral-100">{businessName ?? 'Business'}</div>
+                <div className="truncate text-xs text-neutral-500">{businessAddress ?? ''}</div>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setPickerOpen((o) => !o)}
-              className="text-sm text-neutral-400 hover:text-neutral-200"
+              onClick={() => {
+                setPickerOpen((o) => !o);
+                setPickerQuery('');
+              }}
+              className="flex-shrink-0 self-start text-sm text-neutral-400 hover:text-neutral-200"
             >
               Change
             </button>
@@ -75,17 +86,29 @@ export function ContentTab({
             {pickerOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPickerOpen(false)} />
-                <div className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl bg-black shadow-2xl ring-1 ring-neutral-800">
-                  <div className="border-b border-neutral-800 px-3 py-2 text-xs font-medium text-neutral-500">
-                    Select a managed business
+                <div
+                  className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl bg-black shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-2.5">
+                    <input
+                      type="text"
+                      value={pickerQuery}
+                      onChange={(e) => setPickerQuery(e.target.value)}
+                      placeholder="Search businesses..."
+                      autoFocus
+                      className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                    />
                   </div>
                   <div className="editor-scroll max-h-64 overflow-y-auto p-1.5">
-                    {businesses.length === 0 && (
+                    {filteredBusinesses.length === 0 && (
                       <div className="p-4 text-center text-sm text-neutral-500">
-                        No businesses found in Supabase.
+                        {businesses.length === 0
+                          ? 'No businesses found in Supabase.'
+                          : 'No businesses match your search.'}
                       </div>
                     )}
-                    {businesses.map((b) => (
+                    {filteredBusinesses.map((b) => (
                       <button
                         key={b.id}
                         type="button"
@@ -93,9 +116,8 @@ export function ContentTab({
                           onSelectBusiness?.(b.id);
                           setPickerOpen(false);
                         }}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-neutral-800 ${
-                          b.id === selectedBusinessId ? 'bg-neutral-800' : ''
-                        }`}
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-neutral-800 ${b.id === selectedBusinessId ? 'bg-neutral-800' : ''
+                          }`}
                       >
                         <div className="min-w-0">
                           <div className="truncate text-sm font-semibold text-neutral-100">{b.name}</div>
@@ -255,6 +277,8 @@ export function StyleTab({ config, update }: TabProps) {
               value={config.fontFamily}
               onChange={(v) => update('fontFamily', v)}
               options={[
+                { value: 'inherit', label: 'Inherit from Website' },
+                { value: 'system-ui', label: 'System Default' },
                 { value: 'Poppins', label: 'Poppins' },
                 { value: 'Inter', label: 'Inter' },
                 { value: 'Roboto', label: 'Roboto' },
@@ -334,7 +358,7 @@ export function LayoutTab({ config, update }: TabProps) {
               />
             </Field>
           </div>
-          <div className="mt-4">
+          <div className="my-4">
             <Field label="Alignment">
               <Select
                 value={config.alignment}

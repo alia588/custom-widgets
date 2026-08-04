@@ -3,7 +3,7 @@
 import { CSSProperties, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
-import { defaultWidgetConfig } from '@/lib/widget-config';
+import { defaultWidgetConfig, resolveFontFamily } from '@/lib/widget-config';
 import { GoogleReviewsPanel } from './GoogleReviewsPanel';
 
 export function Star({ filled, color, size }: { filled: boolean; color: string; size: number }) {
@@ -85,7 +85,7 @@ export function buildBadgeStyles(config: WidgetConfig): {
     background,
     borderRadius: `${config.borderRadius}px`,
     padding: `${config.padding * 1.5}px ${config.padding * 2}px`,
-    fontFamily: `'${config.fontFamily}', system-ui, sans-serif`,
+    fontFamily: resolveFontFamily(config.fontFamily),
     cursor: 'pointer',
     transition: 'transform 0.2s ease-out',
     width: config.fullWidth ? '100%' : undefined,
@@ -112,6 +112,7 @@ export function buildBadgeStyles(config: WidgetConfig): {
     fontSize: config.badgeCompactMode ? '12px' : '14px',
     color: config.textColor,
     opacity: 0.55,
+    marginBottom: config.ctaEnabled && !horizontal ? '12px' : undefined,
   };
 
   const cta: CSSProperties = {

@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 
+// The embed script on external sites (GHL etc.) fetches this route
+// cross-origin, so permissive CORS headers are required.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,10 +26,13 @@ export async function GET(
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: 'Widget not found' }, { status: 404 });
+    return NextResponse.json(
+      { error: 'Widget not found' },
+      { status: 404, headers: CORS_HEADERS }
+    );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data, { headers: CORS_HEADERS });
 }
 
 export async function PATCH(
@@ -42,9 +57,9 @@ export async function PATCH(
   if (error) {
     return NextResponse.json(
       { error: 'Update failed', message: error.message },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data, { headers: CORS_HEADERS });
 }

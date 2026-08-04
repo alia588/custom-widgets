@@ -26,7 +26,7 @@ export function Section({
 
 export function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-xl bg-neutral-900 p-4 ring-1 ring-neutral-800">
+    <div className="rounded-xl bg-[#ffffff08] p-4">
       {children}
     </div>
   );
@@ -58,7 +58,7 @@ export function Select({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg bg-black px-3 py-2.5 text-sm text-neutral-100 ring-1 ring-neutral-800 transition-colors hover:bg-neutral-800"
+        className="flex w-full items-center justify-between rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 transition-colors hover:bg-[#ffffff14]"
       >
         <span className="truncate">{selected?.label ?? value}</span>
         <svg
@@ -75,7 +75,7 @@ export function Select({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="editor-scroll absolute right-0 left-0 z-50 mt-2 max-h-64 overflow-y-auto rounded-lg bg-black p-1 shadow-2xl ring-1 ring-neutral-800">
+          <div className="editor-scroll absolute right-0 left-0 z-50 mt-2 max-h-64 overflow-y-auto rounded-lg bg-black p-1 shadow-2xl">
             {options.map((o) => (
               <button
                 key={o.value}
@@ -115,7 +115,7 @@ export function TextInput({
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg bg-neutral-800 px-3 py-2.5 text-sm text-neutral-100 outline-none ring-1 ring-neutral-700 placeholder:text-neutral-600 focus:ring-2 focus:ring-neutral-500"
+      className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
     />
   );
 }
@@ -138,7 +138,7 @@ export function NumberInput({
       min={min}
       max={max}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full rounded-lg bg-neutral-800 px-3 py-2.5 text-sm text-neutral-100 outline-none ring-1 ring-neutral-700 focus:ring-2 focus:ring-neutral-500"
+      className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 outline-none"
     />
   );
 }
@@ -194,6 +194,8 @@ export function Slider({
   label: string;
   unit?: string;
 }) {
+  const fillPct = ((value - min) / (max - min)) * 100;
+
   return (
     <div className="mb-4 last:mb-0">
       <div className="mb-1.5 text-xs font-medium text-neutral-400">
@@ -206,7 +208,10 @@ export function Slider({
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-white"
+        className="editor-slider w-full"
+        style={{
+          background: `linear-gradient(to right, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.5) ${fillPct}%, rgba(255, 255, 255, 0.06) ${fillPct}%, rgba(255, 255, 255, 0.06) 100%)`,
+        }}
       />
     </div>
   );
@@ -224,7 +229,7 @@ export function ColorField({
   return (
     <div className="mb-4 last:mb-0">
       <label className="mb-1.5 block text-xs font-medium text-neutral-400">{label}</label>
-      <div className="flex items-center gap-2 rounded-lg bg-neutral-800 px-3 py-2 ring-1 ring-neutral-700">
+      <div className="flex items-center gap-2 rounded-lg bg-[#ffffff0a] px-3 py-2">
         <input
           type="color"
           value={value}

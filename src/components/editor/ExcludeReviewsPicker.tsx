@@ -67,7 +67,7 @@ export function ExcludeReviewsPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg bg-black px-3 py-2.5 text-sm text-neutral-100 ring-1 ring-neutral-800 transition-colors hover:bg-neutral-800"
+        className="flex w-full items-center justify-between rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 transition-colors hover:bg-[#ffffff14]"
       >
         {shownCount} of {eligible.length} reviews shown
         <svg
@@ -84,15 +84,15 @@ export function ExcludeReviewsPicker({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl bg-black shadow-2xl ring-1 ring-neutral-800">
-            <div className="border-b border-neutral-800 p-3">
+          <div className="absolute right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl bg-black shadow-2xl">
+            <div className="p-3">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by author name..."
                 autoFocus
-                className="w-full rounded-lg bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none ring-1 ring-neutral-700 placeholder:text-neutral-600 focus:ring-2 focus:ring-neutral-500"
+                className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
               />
             </div>
 

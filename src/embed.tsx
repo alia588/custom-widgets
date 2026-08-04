@@ -4,6 +4,21 @@ import widgetStyles from './styles/widget.css?inline';
 
 const SELECTORS = ['[data-designdetail-embed]', '[data-custom-widget]'];
 
+// Resolve the API origin at script-eval time: the page is on an external
+// domain (GHL etc.), so API calls must go to wherever widget.js was loaded
+// from. window.__CUSTOM_WIDGETS_API_ORIGIN__ can override for testing.
+const SCRIPT_ORIGIN = (() => {
+  const w = window as unknown as { __CUSTOM_WIDGETS_API_ORIGIN__?: string };
+  if (w.__CUSTOM_WIDGETS_API_ORIGIN__) return w.__CUSTOM_WIDGETS_API_ORIGIN__;
+  try {
+    const src = (document.currentScript as HTMLScriptElement | null)?.src;
+    if (src) return new URL(src).origin;
+  } catch {
+    // fall through to same-origin relative requests
+  }
+  return '';
+})();
+
 function mountWidgets() {
   const placeholders = document.querySelectorAll<HTMLElement>(
     SELECTORS.join(', ')
@@ -45,7 +60,7 @@ function mountWidgets() {
     shadowRoot.appendChild(mountPoint);
 
     const root = createRoot(mountPoint);
-    root.render(<Widget widgetId={widgetId} />);
+    root.render(<Widget widgetId={widgetId} apiOrigin={SCRIPT_ORIGIN} />);
   });
 }
 

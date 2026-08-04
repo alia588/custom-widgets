@@ -10,6 +10,15 @@ export type Alignment = 'center' | 'left' | 'right';
 export type ThumbnailSize = 'small' | 'medium' | 'large';
 export type MobileMode = 'peek' | 'fullscreen';
 
+// 'inherit' and 'system-ui' are special keywords, not quotable font names.
+export function resolveFontFamily(fontFamily: string): string {
+  if (fontFamily === 'inherit') return 'inherit';
+  if (fontFamily === 'system-ui') {
+    return "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  }
+  return `'${fontFamily}', system-ui, sans-serif`;
+}
+
 export interface WidgetConfig {
   // Content / filtering
   sortBy: SortBy;

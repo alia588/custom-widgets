@@ -5,7 +5,6 @@ import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleReviewsWidget } from '@/components/GoogleReviewsWidget';
-import { Select } from './controls';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './tabs';
 
 export interface EditorWidget {
@@ -126,7 +125,7 @@ export function WidgetEditor({ items }: { items: EditorWidget[] }) {
   return (
     <div className="flex h-screen bg-black text-neutral-100">
       {/* Icon rail */}
-      <div className="flex w-[72px] flex-shrink-0 flex-col gap-1 border-r border-neutral-800 px-2 py-2">
+      <div className="flex w-[72px] flex-shrink-0 flex-col gap-1 bg-white/[0.03] px-2 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),inset_0_-1px_0_0_rgba(0,0,0,0.3),inset_0_2px_4px_0_rgba(0,0,0,0.2)]">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -144,39 +143,31 @@ export function WidgetEditor({ items }: { items: EditorWidget[] }) {
       </div>
 
       {/* Settings panel */}
-      <div className="flex w-[420px] flex-shrink-0 flex-col border-r border-neutral-800">
-        <div className="border-b border-neutral-800 p-5">
+      <div className="flex w-[420px] flex-shrink-0 flex-col bg-white/[0.01]">
+        <div className="p-5">
           <label className="mb-1.5 block text-xs font-medium text-neutral-500">Company</label>
-          <Select
-            value={selectedId}
-            onChange={(v) => {
-              setSelectedId(v);
-              setSaved(false);
-            }}
-            options={items.map((i) => ({
-              value: i.widgetId,
-              label: i.business.name,
-            }))}
-          />
+          <div className="text-sm font-medium text-neutral-100">{selected.business.name}</div>
         </div>
 
-        <div className="border-b border-neutral-800 p-5">
+        <div className="p-5">
           <h2 className="text-lg font-bold">{tabMeta[activeTab].title}</h2>
           <p className="mt-0.5 text-sm text-neutral-500">{tabMeta[activeTab].subtitle}</p>
         </div>
 
         <div className="editor-scroll flex-1 overflow-y-auto p-5">
-          {activeTab === 'content' && <ContentTab {...tabProps} />}
-          {activeTab === 'style' && <StyleTab {...tabProps} />}
-          {activeTab === 'layout' && <LayoutTab {...tabProps} />}
-          {activeTab === 'settings' && <SettingsTab {...tabProps} />}
+          <div key={activeTab} className="editor-tab-enter">
+            {activeTab === 'content' && <ContentTab {...tabProps} />}
+            {activeTab === 'style' && <StyleTab {...tabProps} />}
+            {activeTab === 'layout' && <LayoutTab {...tabProps} />}
+            {activeTab === 'settings' && <SettingsTab {...tabProps} />}
+          </div>
         </div>
 
-        <div className="border-t border-neutral-800 p-4">
+        <div className="p-4 pb-7">
           <button
             onClick={save}
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-3 font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2 text-sm font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-50"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />

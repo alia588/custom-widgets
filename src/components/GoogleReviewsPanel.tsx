@@ -4,7 +4,7 @@ import { CSSProperties, useEffect, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { reviews as hardcodedReviews } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
-import { defaultWidgetConfig, thumbnailSizePx } from '@/lib/widget-config';
+import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx } from '@/lib/widget-config';
 import { Star, GoogleLogo } from './GoogleReviewsWidget';
 
 function Avatar({
@@ -141,7 +141,7 @@ export function GoogleReviewsPanel({
     boxShadow: '4px 0 30px rgba(0,0,0,0.15)',
     transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
     transition: 'transform 0.3s ease-in-out',
-    fontFamily: `'${config.fontFamily}', system-ui, sans-serif`,
+    fontFamily: resolveFontFamily(config.fontFamily),
     display: 'flex',
     flexDirection: 'column',
   };
