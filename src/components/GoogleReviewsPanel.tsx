@@ -4,7 +4,7 @@ import { CSSProperties, useEffect, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { reviews as hardcodedReviews } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
-import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx } from '@/lib/widget-config';
+import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
 import { GoogleLogo } from './GoogleReviewsWidget';
 import { ReviewLightbox } from './ReviewLightbox';
 
@@ -454,7 +454,7 @@ export function GoogleReviewsPanel({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           key={i}
-                          src={src}
+                          src={googlePhotoVariant(src, reviewImageSize * 2)}
                           alt=""
                           onClick={() => setLightbox(src)}
                           style={{

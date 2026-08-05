@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { WidgetConfig } from '@/lib/widget-config';
-import { resolveFontFamily, thumbnailSizePx } from '@/lib/widget-config';
+import { resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleLogo } from './GoogleReviewsWidget';
 import { ReviewLightbox } from './ReviewLightbox';
@@ -261,7 +261,7 @@ export function GoogleReviewsCarousel({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={i}
-              src={src}
+              src={googlePhotoVariant(src, avatarSize * 2)}
               alt=""
               onClick={() => setLightbox(src)}
               style={{

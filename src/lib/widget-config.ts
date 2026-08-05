@@ -302,3 +302,15 @@ export const thumbnailSizePx: Record<ThumbnailSize, number> = {
   medium: 60,
   large: 80,
 };
+
+/**
+ * Google-hosted photos (lh3.googleusercontent.com) take a trailing size token
+ * (e.g. "=k-no", "=w512-h384"). Swap it for a server-side square crop at the
+ * requested size — Google's resampling is much crisper than the browser
+ * downscaling the full-size original into a small thumbnail slot.
+ */
+export function googlePhotoVariant(src: string, size: number): string {
+  if (!src.includes('googleusercontent.com')) return src;
+  const base = src.replace(/=[^=]*$/, '');
+  return `${base}=w${size}-h${size}-c`;
+}
