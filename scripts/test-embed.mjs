@@ -1,6 +1,6 @@
 /**
  * End-to-end embed test: simulates an external site (GHL) loading
- * widget.js with the DesignDetail snippet markup, then checks that
+ * widget.js with the BuiltByShah snippet markup, then checks that
  * the widget fetches live data from the API and renders into Shadow DOM.
  *
  * Usage: node scripts/test-embed.mjs [widgetId] [origin]
@@ -28,9 +28,9 @@ if (!bundle.includes('custom-widgets') && bundle.length < 1000) {
 const html = `<!DOCTYPE html>
 <html>
   <body>
-    <!-- Design Detail Embed -->
-    <div data-designdetail-embed="${widgetId}"></div>
-    <!-- End Design Detail Embed -->
+    <!-- BuiltByShah Widget Embed -->
+    <div data-bbs-embed="${widgetId}"></div>
+    <!-- End BuiltByShah Widget Embed -->
   </body>
 </html>`;
 
@@ -65,7 +65,7 @@ dom.window.document.body.appendChild(scriptEl);
 const deadline = Date.now() + 15000;
 let rendered = '';
 while (Date.now() < deadline) {
-  const placeholder = dom.window.document.querySelector('[data-designdetail-embed]');
+  const placeholder = dom.window.document.querySelector('[data-bbs-embed]');
   rendered = placeholder?.shadowRoot?.querySelector('.custom-widget-root')?.textContent ?? '';
   if (rendered.trim().length > 0) break;
   await new Promise((r) => setTimeout(r, 250));

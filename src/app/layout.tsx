@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Custom Widgets - Next.js',
-  description: 'Custom embed widget replacement for DesignDetail',
+  description: 'Embeddable custom widgets by BuiltByShah',
 };
 
 export default function RootLayout({

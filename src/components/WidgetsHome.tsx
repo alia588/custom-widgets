@@ -56,10 +56,10 @@ const widgetTypeMeta: Record<
 
 function buildEmbedCode(id: string) {
   return [
-    '<!-- Design Detail Embed -->',
-    `<div data-designdetail-embed="${id}"></div>`,
+    '<!-- BuiltByShah Widget Embed -->',
+    `<div data-bbs-embed="${id}"></div>`,
     `<script src="${window.location.origin}/api/embeds/widget.js"></script>`,
-    '<!-- End Design Detail Embed -->',
+    '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }
 

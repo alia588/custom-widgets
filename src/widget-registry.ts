@@ -8,14 +8,15 @@ export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: stri
 /**
  * Maps widget IDs to React components.
  *
- * The loader supports two data attributes:
- *   <div data-designdetail-embed="WIDGET_ID"></div>
- *   <div data-custom-widget="WIDGET_ID"></div>
+ * The loader supports these data attributes:
+ *   <div data-bbs-embed="WIDGET_ID"></div>          (current)
+ *   <div data-custom-widget="WIDGET_ID"></div>      (generic)
+ *   <div data-designdetail-embed="WIDGET_ID"></div> (legacy, pre-rebrand)
  *
  * Add new widgets here when a new widget row is created in Supabase.
  */
 const registry: Record<string, WidgetComponent> = {
-  // SSR Diesel Repairs — Google Reviews badge (replaces DesignDetail embed)
+  // SSR Diesel Repairs — Google Reviews badge
   '004a7b18-6bcc-4b2a-a8f9-454012312690': GoogleReviewsEmbed as WidgetComponent,
   // GARYS AUTO COLLISION CENTER — Google Reviews badge
   '1cb98d3c-e962-45be-8fac-5859aa7143b8': GoogleReviewsEmbed as WidgetComponent,

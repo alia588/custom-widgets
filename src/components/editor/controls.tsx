@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react';
 
 // ---------------------------------------------------------------------------
-// Dark editor UI primitives matching the DesignDetail editor screenshots.
+// Dark editor UI primitives for the widget editor.
 // ---------------------------------------------------------------------------
 
 export function Section({

@@ -2,7 +2,13 @@ import { createRoot } from 'react-dom/client';
 import { getWidgetComponent } from './widget-registry';
 import widgetStyles from './styles/widget.css?inline';
 
-const SELECTORS = ['[data-designdetail-embed]', '[data-custom-widget]'];
+// data-designdetail-embed is kept for backward compatibility with embeds
+// pasted on live sites before the rebrand; new embed codes use data-bbs-embed.
+const SELECTORS = [
+  '[data-bbs-embed]',
+  '[data-custom-widget]',
+  '[data-designdetail-embed]',
+];
 
 // Resolve the API origin at script-eval time: the page is on an external
 // domain (GHL etc.), so API calls must go to wherever widget.js was loaded
@@ -31,8 +37,9 @@ function mountWidgets() {
 
   placeholders.forEach((placeholder) => {
     const widgetId =
-      placeholder.dataset.designdetailEmbed ||
-      placeholder.dataset.customWidget;
+      placeholder.dataset.bbsEmbed ||
+      placeholder.dataset.customWidget ||
+      placeholder.dataset.designdetailEmbed;
 
     if (!widgetId) {
       console.warn('[custom-widgets] Placeholder is missing a widget ID.');

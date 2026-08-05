@@ -5,35 +5,3 @@
   color: #1f2937;
   line-height: 1.5;
 }
-
-.dd-widget {
-  max-width: 420px;
-  margin: 0 auto;
-}
-
-.dd-widget-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  background: #ffffff;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-.dd-widget-title {
-  margin: 0 0 8px;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.dd-widget-id {
-  margin: 0 0 12px;
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    monospace;
-}
-
-.dd-widget-text {
-  margin: 0;
-  color: #4b5563;
-}

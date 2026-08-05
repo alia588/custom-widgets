@@ -50,6 +50,8 @@ export function GoogleReviewsCarousel({
   const [lightbox, setLightbox] = useState<string | null>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
   const filtered = reviews
     .filter((r) => r.rating >= config.minRating)
@@ -70,7 +72,16 @@ export function GoogleReviewsCarousel({
     })
     .slice(0, config.maxReviews);
 
-  const perSlide = Math.max(1, config.carouselReviewsPerSlide);
+  // Responsive: never squeeze cards below ~240px wide. On narrow screens
+  // (phones, small embed slots) show fewer cards per slide than configured.
+  const MIN_CARD_WIDTH = 240;
+  const perSlide = Math.max(
+    1,
+    Math.min(
+      config.carouselReviewsPerSlide,
+      containerWidth != null ? Math.floor(containerWidth / MIN_CARD_WIDTH) : config.carouselReviewsPerSlide
+    )
+  );
   const pages: Review[][] = [];
   for (let i = 0; i < filtered.length; i += perSlide) {
     pages.push(filtered.slice(i, i + perSlide));
@@ -85,6 +96,17 @@ export function GoogleReviewsCarousel({
     }, 4000);
     return () => clearInterval(timer);
   }, [config.carouselAutoplay, pageCount]);
+
+  // Track the rendered width so per-slide count can adapt (see MIN_CARD_WIDTH).
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const update = () => setContainerWidth(el.offsetWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Pin the viewport to the tallest slide's height so the pagination below
   // never moves when navigating between short and tall slides.
@@ -266,6 +288,7 @@ export function GoogleReviewsCarousel({
 
   return (
     <div
+      ref={rootRef}
       style={{
         ...widthStyle,
         maxWidth: `${config.carouselMaxWidth}px`,
