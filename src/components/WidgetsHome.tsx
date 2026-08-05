@@ -733,6 +733,7 @@ export function WidgetsHome({
               config={{ ...item.config, carouselReviewsPerSlide: 3 }}
               business={item.business}
               reviews={item.reviews}
+              disableResponsive
             />
           ) : (
             <GoogleReviewsWidget

@@ -41,17 +41,19 @@ export function GoogleReviewsCarousel({
   config,
   business,
   reviews = [],
+  disableResponsive = false,
 }: {
   config: WidgetConfig;
   business?: BusinessInfo;
   reviews?: Review[];
+  /** Skip the per-slide breakpoints — previews always show the configured count. */
+  disableResponsive?: boolean;
 }) {
   const [page, setPage] = useState(0);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [viewportWidth, setViewportWidth] = useState<number | null>(null);
 
   const filtered = reviews
     .filter((r) => r.rating >= config.minRating)
@@ -72,20 +74,17 @@ export function GoogleReviewsCarousel({
     })
     .slice(0, config.maxReviews);
 
-  // Responsive breakpoints: full count on desktop, 2 cards below 1024px,
-  // 1 card below 768px. The configured value is the desktop maximum.
+  // Responsive breakpoints (embed only), based on the screen/viewport width:
+  // configured count above 1024px, 2 cards at 768–1024px, 1 card below 768px.
   const perSlide = Math.max(
     1,
-    Math.min(
-      config.carouselReviewsPerSlide,
-      containerWidth == null
-        ? config.carouselReviewsPerSlide
-        : containerWidth < 768
-          ? 1
-          : containerWidth < 1024
-            ? 2
-            : config.carouselReviewsPerSlide
-    )
+    disableResponsive || viewportWidth == null
+      ? config.carouselReviewsPerSlide
+      : viewportWidth < 768
+        ? 1
+        : viewportWidth < 1024
+          ? Math.min(config.carouselReviewsPerSlide, 2)
+          : config.carouselReviewsPerSlide
   );
   const pages: Review[][] = [];
   for (let i = 0; i < filtered.length; i += perSlide) {
@@ -102,15 +101,12 @@ export function GoogleReviewsCarousel({
     return () => clearInterval(timer);
   }, [config.carouselAutoplay, pageCount]);
 
-  // Track the rendered width so per-slide count can adapt (see MIN_CARD_WIDTH).
+  // Track the viewport width so the per-slide count can adapt to screen size.
   useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const update = () => setContainerWidth(el.offsetWidth);
+    const update = () => setViewportWidth(window.innerWidth);
     update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   // Pin the viewport to the tallest slide's height so the pagination below
@@ -248,6 +244,8 @@ export function GoogleReviewsCarousel({
             // auto too (CSS spec), making cards horizontally scrollable on
             // touch devices when text contains long unbreakable strings.
             overflowX: 'hidden',
+            // Keep the thin scrollbar from overlapping the text.
+            paddingRight: '10px',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
           }}
@@ -297,7 +295,6 @@ export function GoogleReviewsCarousel({
 
   return (
     <div
-      ref={rootRef}
       style={{
         ...widthStyle,
         maxWidth: `${config.carouselMaxWidth}px`,
@@ -433,7 +430,7 @@ export function GoogleReviewsCarousel({
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          {containerWidth != null && containerWidth < 768 ? (
+          {viewportWidth != null && viewportWidth < 768 ? (
             // Compact "n / N" indicator on small screens — a long row of
             // dots (one per review) would overflow the widget.
             <span

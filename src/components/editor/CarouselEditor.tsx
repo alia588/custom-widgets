@@ -239,6 +239,7 @@ export function CarouselEditor({
                 config={config}
                 business={business}
                 reviews={reviews}
+                disableResponsive
               />
             </div>
           </div>
