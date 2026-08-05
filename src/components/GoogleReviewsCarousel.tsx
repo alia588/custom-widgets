@@ -244,6 +244,10 @@ export function GoogleReviewsCarousel({
             color: textColor,
             maxHeight: `${config.carouselTextMaxHeight}px`,
             overflowY: 'auto',
+            // Without this, overflow-y:auto forces overflow-x to compute as
+            // auto too (CSS spec), making cards horizontally scrollable on
+            // touch devices when text contains long unbreakable strings.
+            overflowX: 'hidden',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
           }}
@@ -299,6 +303,9 @@ export function GoogleReviewsCarousel({
         maxWidth: `${config.carouselMaxWidth}px`,
         margin: '0 auto',
         boxSizing: 'border-box',
+        // Insurance against any child poking out sideways on small screens —
+        // the widget must never make the host page horizontally scrollable.
+        overflowX: 'hidden',
         fontFamily: config.useSiteTheme ? 'inherit' : resolveFontFamily(config.fontFamily),
         background:
           config.badgeBackgroundType === 'solid' ? config.badgeBackgroundColor : 'transparent',
@@ -426,6 +433,23 @@ export function GoogleReviewsCarousel({
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
+          {containerWidth != null && containerWidth < 768 ? (
+            // Compact "n / N" indicator on small screens — a long row of
+            // dots (one per review) would overflow the widget.
+            <span
+              aria-live="polite"
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: textColor,
+                minWidth: '56px',
+                textAlign: 'center',
+                userSelect: 'none',
+              }}
+            >
+              {currentPage + 1} / {pageCount}
+            </span>
+          ) : (
           <div style={{ display: 'flex', gap: '6px' }}>
             {pages.map((_, i) => (
               <button
@@ -440,11 +464,13 @@ export function GoogleReviewsCarousel({
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',
-                  background: i === currentPage ? primary : 'rgba(255, 255, 255, 0.35)',
+                  background: i === currentPage ? primary : textColor,
+                  opacity: i === currentPage ? 1 : 0.25,
                 }}
               />
             ))}
           </div>
+          )}
           <button
             type="button"
             onClick={() => setPage((currentPage + 1) % pageCount)}
