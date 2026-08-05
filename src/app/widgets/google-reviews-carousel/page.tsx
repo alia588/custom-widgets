@@ -2,15 +2,19 @@ import { supabase } from '@/lib/db';
 import { configFromDbRow } from '@/lib/widget-config';
 import { reviews as fallbackReviews } from '@/lib/reviews-data';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
-import { WidgetEditor, type EditorWidget } from '@/components/editor/WidgetEditor';
+import {
+  CarouselEditor,
+  type CarouselBusiness,
+  type CarouselEditorWidget,
+} from '@/components/editor/CarouselEditor';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Google Reviews Widget — Editor',
+  title: 'Google Reviews Carousel — Editor',
 };
 
-export default async function GoogleReviewsWidgetPage({
+export default async function GoogleReviewsCarouselPage({
   searchParams,
 }: {
   searchParams: Promise<{ id?: string }>;
@@ -20,8 +24,13 @@ export default async function GoogleReviewsWidgetPage({
   const { data: widgets } = await supabase
     .from('widgets')
     .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
-    .eq('widget_type', 'google_reviews')
+    .eq('widget_type', 'google_reviews_carousel')
     .order('created_at', { ascending: true });
+
+  const { data: businessRows } = await supabase
+    .from('businesses')
+    .select('*')
+    .order('name', { ascending: true });
 
   const { data: reviewRows } = await supabase.from('reviews').select('*');
 
@@ -40,7 +49,15 @@ export default async function GoogleReviewsWidgetPage({
     reviewsByBusiness.set(r.business_id, list);
   }
 
-  const items: EditorWidget[] = (widgets ?? []).map((w) => {
+  const allBusinesses: CarouselBusiness[] = (businessRows ?? []).map((b) => ({
+    id: b.id,
+    name: b.name,
+    address: b.address ?? '',
+    totalReviews: b.total_reviews,
+    averageRating: Number(b.average_rating),
+  }));
+
+  const items: CarouselEditorWidget[] = (widgets ?? []).map((w) => {
     const business = w.businesses as unknown as {
       name: string;
       place_id: string;
@@ -59,11 +76,19 @@ export default async function GoogleReviewsWidgetPage({
     return {
       widgetId: w.id,
       widgetName: w.name,
+      businessId: w.business_id,
       initialConfig: configFromDbRow(w),
       business: businessInfo,
       reviews: reviewsByBusiness.get(w.business_id) ?? fallbackReviews,
     };
   });
 
-  return <WidgetEditor items={items} initialSelectedId={id} />;
+  return (
+    <CarouselEditor
+      items={items}
+      initialSelectedId={id}
+      allBusinesses={allBusinesses}
+      reviewsByBusiness={Object.fromEntries(reviewsByBusiness)}
+    />
+  );
 }

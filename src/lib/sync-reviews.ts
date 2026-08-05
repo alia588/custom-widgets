@@ -89,6 +89,7 @@ export async function syncBusinessReviews(
     .eq('id', business.id);
 
   // 5. Snapshot into each widget's cached_reviews for the embed script
+  // (both the badge and the carousel read from this cache)
   const cached = rows.map((r) => ({
     id: r.google_review_id,
     authorName: r.author_name,
@@ -106,7 +107,7 @@ export async function syncBusinessReviews(
       last_synced_at: new Date().toISOString(),
     })
     .eq('business_id', business.id)
-    .eq('widget_type', 'google_reviews')
+    .in('widget_type', ['google_reviews', 'google_reviews_carousel'])
     .select('id');
 
   return {

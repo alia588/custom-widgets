@@ -20,8 +20,8 @@ export async function GET(
   const { id } = await params;
 
   const { data, error } = await supabase
-    .from('widgets')
-    .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+    .from('before_after_widgets')
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -42,13 +42,12 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  // Prevent identity tampering (business_id is allowed: editors can
-  // re-point a widget at a different business)
+  // Prevent id tampering
   delete body.id;
   delete body.created_at;
 
   const { data, error } = await supabase
-    .from('widgets')
+    .from('before_after_widgets')
     .update(body)
     .eq('id', id)
     .select()
@@ -70,7 +69,10 @@ export async function DELETE(
 ) {
   const { id } = await params;
 
-  const { error } = await supabase.from('widgets').delete().eq('id', id);
+  const { error } = await supabase
+    .from('before_after_widgets')
+    .delete()
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json(

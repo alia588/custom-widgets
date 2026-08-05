@@ -2,18 +2,15 @@
 
 import { ReactNode, useState } from 'react';
 import Link from 'next/link';
-import type { WidgetConfig } from '@/lib/widget-config';
-import { configToDbRow } from '@/lib/widget-config';
-import type { BusinessInfo, Review } from '@/lib/reviews-data';
-import { GoogleReviewsWidget } from '@/components/GoogleReviewsWidget';
-import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './tabs';
+import type { BeforeAfterConfig } from '@/lib/before-after-config';
+import { beforeAfterToDbRow } from '@/lib/before-after-config';
+import { BeforeAfterWidget } from '@/components/BeforeAfterWidget';
+import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './before-after-tabs';
 
-export interface EditorWidget {
+export interface BeforeAfterEditorWidget {
   widgetId: string;
   widgetName: string;
-  initialConfig: WidgetConfig;
-  business: BusinessInfo;
-  reviews: Review[];
+  initialConfig: BeforeAfterConfig;
 }
 
 type EditorTab = 'content' | 'style' | 'layout' | 'settings';
@@ -49,7 +46,7 @@ const tabs: { id: EditorTab; label: string; icon: ReactNode }[] = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00.33 1.82v.01a1.65 1.65 0 00-1.51-1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1H3a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
       </svg>
     ),
   },
@@ -62,20 +59,23 @@ const tabMeta: Record<EditorTab, { title: string; subtitle: string }> = {
   settings: { title: 'Settings', subtitle: 'Advanced configuration and integration options' },
 };
 
-export function WidgetEditor({
+export function BeforeAfterEditor({
   items,
   initialSelectedId,
 }: {
-  items: EditorWidget[];
+  items: BeforeAfterEditorWidget[];
   initialSelectedId?: string;
 }) {
-  const [selectedId, setSelectedId] = useState<string>(() =>
+  const [selectedId] = useState<string>(() =>
     initialSelectedId && items.some((i) => i.widgetId === initialSelectedId)
       ? initialSelectedId
       : (items[0]?.widgetId ?? '')
   );
-  const [configs, setConfigs] = useState<Record<string, WidgetConfig>>(() =>
+  const [configs, setConfigs] = useState<Record<string, BeforeAfterConfig>>(() =>
     Object.fromEntries(items.map((i) => [i.widgetId, i.initialConfig]))
+  );
+  const [names, setNames] = useState<Record<string, string>>(() =>
+    Object.fromEntries(items.map((i) => [i.widgetId, i.widgetName]))
   );
   const [activeTab, setActiveTab] = useState<EditorTab>('content');
   const [saving, setSaving] = useState(false);
@@ -86,14 +86,15 @@ export function WidgetEditor({
   if (!selected) {
     return (
       <div className="flex h-screen items-center justify-center bg-black text-neutral-400">
-        No Google Reviews widgets found. Add a business in Supabase first.
+        No Before/After Slider widgets found. Add a row to before_after_widgets in Supabase first.
       </div>
     );
   }
 
   const config = configs[selectedId] ?? selected.initialConfig;
+  const widgetName = names[selectedId] ?? selected.widgetName;
 
-  const update = <K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
+  const update = <K extends keyof BeforeAfterConfig>(key: K, value: BeforeAfterConfig[K]) => {
     setConfigs((c) => ({ ...c, [selectedId]: { ...config, [key]: value } }));
     setSaved(false);
   };
@@ -101,10 +102,10 @@ export function WidgetEditor({
   const save = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/v1/widgets/${selectedId}`, {
+      const res = await fetch(`/api/v1/before-after-widgets/${selectedId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(configToDbRow(config)),
+        body: JSON.stringify({ name: widgetName, ...beforeAfterToDbRow(config) }),
       });
       if (!res.ok) throw new Error(await res.text());
       setSaved(true);
@@ -118,17 +119,9 @@ export function WidgetEditor({
   const tabProps = {
     config,
     update,
-    businessName: selected.business.name,
-    businessAddress: selected.business.address,
-    reviews: selected.reviews,
-    businesses: items.map((i) => ({
-      id: i.widgetId,
-      name: i.business.name,
-      address: i.business.address,
-    })),
-    selectedBusinessId: selectedId,
-    onSelectBusiness: (id: string) => {
-      setSelectedId(id);
+    widgetName,
+    onNameChange: (name: string) => {
+      setNames((n) => ({ ...n, [selectedId]: name }));
       setSaved(false);
     },
   };
@@ -146,7 +139,7 @@ export function WidgetEditor({
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <h1 className="text-lg font-bold">Edit Google Reviews Badge</h1>
+        <h1 className="text-lg font-bold">Edit Before/After Slider</h1>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -194,25 +187,25 @@ export function WidgetEditor({
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
               <path d="M17 21v-8H7v8M7 3v5h8" />
             </svg>
-            {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
+            {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Update Embed'}
           </button>
+          <p className="mt-2 text-center text-xs text-neutral-600">
+            Upload custom images or use the defaults to update your embed
+          </p>
         </div>
       </div>
 
       {/* Live preview */}
       <div className="relative flex-1 overflow-hidden bg-neutral-950">
         <div className="absolute top-4 left-5 text-sm text-neutral-500">
-          {selected.widgetName} <span className="text-neutral-700">· live preview</span>
+          {widgetName} <span className="text-neutral-700">· live preview</span>
         </div>
         <div className="flex h-full items-center justify-center p-10">
-          <GoogleReviewsWidget
-            key={selectedId}
-            widgetId={selectedId}
-            config={config}
-            business={selected.business}
-            reviews={selected.reviews}
-            preview={config.position !== 'inline'}
-          />
+          <div className="w-full max-w-3xl">
+            {/* Keyed by sliderPosition so the editor's Slider Position
+                control remounts the widget at the configured position. */}
+            <BeforeAfterWidget key={`${selectedId}-${config.sliderPosition}`} config={config} />
+          </div>
         </div>
       </div>
       </div>

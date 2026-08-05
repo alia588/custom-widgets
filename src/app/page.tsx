@@ -1,61 +1,99 @@
-import Link from 'next/link';
+import { supabase } from '@/lib/db';
+import { beforeAfterFromDbRow } from '@/lib/before-after-config';
+import { configFromDbRow } from '@/lib/widget-config';
+import type { Review } from '@/lib/reviews-data';
+import {
+  WidgetsHome,
+  type BeforeAfterItem,
+  type GoogleReviewsItem,
+} from '@/components/WidgetsHome';
 
-const widgetTypes = [
-  {
-    slug: 'google-reviews',
-    name: 'Google Reviews Badge',
-    description: 'Rating badge with a slide-out reviews drawer.',
-    available: true,
-  },
-  {
-    slug: 'carousel',
-    name: 'Reviews Carousel',
-    description: 'Auto-scrolling row of review cards.',
-    available: false,
-  },
-];
+export const dynamic = 'force-dynamic';
 
-export default function Home() {
+export default async function Home() {
+  const [{ data: beforeAfterRows }, { data: reviewWidgetRows }, { data: carouselWidgetRows }] =
+    await Promise.all([
+      supabase.from('before_after_widgets').select('*').order('created_at', { ascending: true }),
+      supabase
+        .from('widgets')
+        .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+        .eq('widget_type', 'google_reviews')
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('widgets')
+        .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+        .eq('widget_type', 'google_reviews_carousel')
+        .order('created_at', { ascending: true }),
+    ]);
+
+  const beforeAfterItems: BeforeAfterItem[] = (beforeAfterRows ?? []).map((w) => ({
+    id: w.id,
+    name: w.name,
+    config: beforeAfterFromDbRow(w),
+  }));
+
+  const mapReviewWidget = (
+    w: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+    widgetType: GoogleReviewsItem['widgetType']
+  ): GoogleReviewsItem => {
+    const business = w.businesses as {
+      name: string;
+      address: string | null;
+      total_reviews: number;
+      average_rating: number;
+    } | null;
+
+    const reviews: Review[] = (w.cached_reviews ?? []).map(
+      (r: Record<string, unknown>) => ({
+        id: r.id,
+        authorName: r.authorName,
+        authorPhotoUrl: r.authorPhotoUrl ?? undefined,
+        rating: r.rating,
+        text: r.text ?? '',
+        relativeTime: r.relativeTime ?? '',
+        images: r.images ?? [],
+      })
+    );
+
+    return {
+      id: w.id,
+      businessId: w.business_id,
+      widgetType,
+      name: w.name,
+      config: configFromDbRow(w),
+      business: business
+        ? {
+            name: business.name,
+            address: business.address ?? '',
+            totalReviews: business.total_reviews,
+            averageRating: Number(business.average_rating),
+          }
+        : undefined,
+      reviews,
+    };
+  };
+
+  const googleReviewsItems: GoogleReviewsItem[] = (reviewWidgetRows ?? []).map((w) =>
+    mapReviewWidget(w, 'google_reviews')
+  );
+
+  const carouselItems: GoogleReviewsItem[] = (carouselWidgetRows ?? []).map((w) =>
+    mapReviewWidget(w, 'google_reviews_carousel')
+  );
+
   return (
     <main className="min-h-screen bg-neutral-950 p-10 text-neutral-100">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold">Widgets</h1>
         <p className="mt-1 mb-8 text-neutral-500">
-          Select a widget type to configure it for a managed business.
+          Select a widget type to manage its embeds.
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {widgetTypes.map((w) =>
-            w.available ? (
-              <Link
-                key={w.slug}
-                href={`/widgets/${w.slug}`}
-                className="group rounded-xl bg-neutral-900 p-5 ring-1 ring-neutral-800 transition-colors hover:ring-neutral-600"
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{w.name}</h2>
-                  <span className="text-neutral-600 transition-transform group-hover:translate-x-1">
-                    →
-                  </span>
-                </div>
-                <p className="text-sm text-neutral-500">{w.description}</p>
-              </Link>
-            ) : (
-              <div
-                key={w.slug}
-                className="rounded-xl bg-neutral-900 p-5 opacity-50 ring-1 ring-neutral-800"
-              >
-                <div className="mb-1 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{w.name}</h2>
-                  <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                    Coming soon
-                  </span>
-                </div>
-                <p className="text-sm text-neutral-500">{w.description}</p>
-              </div>
-            )
-          )}
-        </div>
+        <WidgetsHome
+          beforeAfterItems={beforeAfterItems}
+          googleReviewsItems={googleReviewsItems}
+          carouselItems={carouselItems}
+        />
       </div>
     </main>
   );

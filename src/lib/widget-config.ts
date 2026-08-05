@@ -9,6 +9,7 @@ export type Position = 'inline' | 'fixed' | 'absolute';
 export type Alignment = 'center' | 'left' | 'right';
 export type ThumbnailSize = 'small' | 'medium' | 'large';
 export type MobileMode = 'peek' | 'fullscreen';
+export type WidthType = 'percentage' | 'fixed';
 
 // 'inherit' and 'system-ui' are special keywords, not quotable font names.
 export function resolveFontFamily(fontFamily: string): string {
@@ -78,6 +79,17 @@ export interface WidgetConfig {
   drawerReviewsPerPage: number;
   drawerWidth: number;
   drawerMobileMode: MobileMode;
+
+  // Carousel (widget_type 'google_reviews_carousel')
+  carouselWidthType: WidthType;
+  carouselWidthValue: number;
+  carouselReviewsPerSlide: number;
+  carouselMaxWidth: number;
+  carouselCardPadding: number;
+  carouselCardGap: number;
+  carouselTextMaxHeight: number;
+  carouselAutoplay: boolean;
+  carouselShowOverallRating: boolean;
 }
 
 export const defaultWidgetConfig: WidgetConfig = {
@@ -131,6 +143,16 @@ export const defaultWidgetConfig: WidgetConfig = {
   drawerReviewsPerPage: 10,
   drawerWidth: 400,
   drawerMobileMode: 'peek',
+
+  carouselWidthType: 'percentage',
+  carouselWidthValue: 100,
+  carouselReviewsPerSlide: 5,
+  carouselMaxWidth: 1200,
+  carouselCardPadding: 16,
+  carouselCardGap: 16,
+  carouselTextMaxHeight: 300,
+  carouselAutoplay: false,
+  carouselShowOverallRating: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -191,6 +213,16 @@ export function configFromDbRow(row: Record<string, any>): WidgetConfig {
     drawerReviewsPerPage: row.drawer_reviews_per_page ?? 10,
     drawerWidth: row.drawer_width ?? 400,
     drawerMobileMode: row.drawer_mobile_mode ?? 'peek',
+
+    carouselWidthType: row.carousel_width_type ?? 'percentage',
+    carouselWidthValue: row.carousel_width_value ?? 100,
+    carouselReviewsPerSlide: row.carousel_reviews_per_slide ?? 5,
+    carouselMaxWidth: row.carousel_max_width ?? 1200,
+    carouselCardPadding: row.carousel_card_padding ?? 16,
+    carouselCardGap: row.carousel_card_gap ?? 16,
+    carouselTextMaxHeight: row.carousel_text_max_height ?? 300,
+    carouselAutoplay: row.carousel_autoplay ?? false,
+    carouselShowOverallRating: row.carousel_show_overall_rating ?? true,
   };
 }
 
@@ -246,6 +278,16 @@ export function configToDbRow(config: WidgetConfig): Record<string, unknown> {
     drawer_reviews_per_page: config.drawerReviewsPerPage,
     drawer_width: config.drawerWidth,
     drawer_mobile_mode: config.drawerMobileMode,
+
+    carousel_width_type: config.carouselWidthType,
+    carousel_width_value: config.carouselWidthValue,
+    carousel_reviews_per_slide: config.carouselReviewsPerSlide,
+    carousel_max_width: config.carouselMaxWidth,
+    carousel_card_padding: config.carouselCardPadding,
+    carousel_card_gap: config.carouselCardGap,
+    carousel_text_max_height: config.carouselTextMaxHeight,
+    carousel_autoplay: config.carouselAutoplay,
+    carousel_show_overall_rating: config.carouselShowOverallRating,
 
     updated_at: new Date().toISOString(),
   };

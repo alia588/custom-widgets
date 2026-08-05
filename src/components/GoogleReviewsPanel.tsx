@@ -281,6 +281,25 @@ export function GoogleReviewsPanel({
                 {review.text}
               </p>
 
+              {config.drawerShowReviewImages && (review.images?.length ?? 0) > 0 && (
+                <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {review.images!.map((src, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={src}
+                      alt=""
+                      style={{
+                        width: `${avatarSize}px`,
+                        height: `${avatarSize}px`,
+                        borderRadius: '8px',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div
                 style={{
                   marginTop: '12px',
