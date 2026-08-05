@@ -29,24 +29,24 @@ function ImageOrPlaceholder({
         style={
           isStatic
             ? {
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                aspectRatio: '4 / 3',
-                background: '#E5E7EB',
-                color: '#9CA3AF',
-                fontSize: '14px',
-              }
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              aspectRatio: '4 / 3',
+              background: '#E5E7EB',
+              color: '#9CA3AF',
+              fontSize: '14px',
+            }
             : {
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#E5E7EB',
-                color: '#9CA3AF',
-                fontSize: '14px',
-              }
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#E5E7EB',
+              color: '#9CA3AF',
+              fontSize: '14px',
+            }
         }
       >
         {alt} image
@@ -62,13 +62,13 @@ function ImageOrPlaceholder({
         isStatic
           ? { width: '100%', height: 'auto', display: 'block' }
           : {
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-            }
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }
       }
     />
   );
@@ -140,10 +140,13 @@ export function BeforeAfterWidget({
     top: compact ? '6px' : '12px',
     background: config.labelBackgroundColor,
     color: config.labelTextColor,
-    fontSize: compact ? '10px' : '13px',
-    fontWeight: 600,
-    padding: compact ? '2px 8px' : '4px 14px',
+    fontSize: compact ? '11px' : '15px',
+    fontWeight: 500,
+    opacity: 0.8,
+    padding: compact ? '3px 10px' : '5px 10px',
     borderRadius: '9999px',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
     zIndex: 3,
     pointerEvents: 'none',
     userSelect: 'none',
