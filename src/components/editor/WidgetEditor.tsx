@@ -86,7 +86,7 @@ export function WidgetEditor({
   if (!selected) {
     return (
       <div className="flex h-screen items-center justify-center bg-black text-neutral-400">
-        No Google Reviews widgets found. Add a business in Supabase first.
+        No Google Reviews Badge widgets found. Add a business in Supabase first.
       </div>
     );
   }

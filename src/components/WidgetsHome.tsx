@@ -41,7 +41,7 @@ const widgetTypeMeta: Record<
       'Showcase stunning before and after transformations with interactive drag sliders',
   },
   'google-reviews': {
-    name: 'Google Reviews',
+    name: 'Google Reviews Badge',
     modalTitle: 'Google Reviews Badges',
     typeLabel: 'Google Reviews Badge',
     description: 'Build customer trust by displaying your latest Google reviews in real-time',

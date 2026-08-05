@@ -310,16 +310,12 @@ export function StyleTab({ config, update }: TabProps) {
         </Card>
       </Section>
 
-      <Section title="Drawer">
+      <Section title="Popup">
         <Card>
           <div className="grid grid-cols-2 gap-4">
             <ColorField label="Background" value={config.drawerBackgroundColor} onChange={(v) => update('drawerBackgroundColor', v)} />
             <ColorField label="Text Color" value={config.drawerTextColor} onChange={(v) => update('drawerTextColor', v)} />
-            <ColorField label="Card Background" value={config.drawerCardBackgroundColor} onChange={(v) => update('drawerCardBackgroundColor', v)} />
-            <ColorField label="Card Border" value={config.drawerCardBorderColor} onChange={(v) => update('drawerCardBorderColor', v)} />
-          </div>
-          <div className="mt-4">
-            <Slider label="Card Radius" value={config.drawerCardRadius} min={0} max={32} onChange={(v) => update('drawerCardRadius', v)} />
+            <ColorField label="Divider" value={config.drawerCardBorderColor} onChange={(v) => update('drawerCardBorderColor', v)} />
           </div>
         </Card>
       </Section>
@@ -405,7 +401,7 @@ export function SettingsTab({ config, update }: TabProps) {
         </Card>
       </Section>
 
-      <Section title="Drawer Display">
+      <Section title="Popup Display">
         <Card>
           <Toggle checked={config.drawerShowBusinessInfo} onChange={(v) => update('drawerShowBusinessInfo', v)} label="Business Info" />
           <Toggle checked={config.drawerShowStarRatings} onChange={(v) => update('drawerShowStarRatings', v)} label="Star Ratings" />
@@ -415,7 +411,7 @@ export function SettingsTab({ config, update }: TabProps) {
         </Card>
       </Section>
 
-      <Section title="Thumbnail Size">
+      <Section title="Author Photo Size">
         <Card>
           <Select
             value={config.thumbnailSize}
@@ -429,14 +425,28 @@ export function SettingsTab({ config, update }: TabProps) {
         </Card>
       </Section>
 
-      <Section title="Drawer Settings">
+      <Section title="Review Photo Size">
+        <Card>
+          <Select
+            value={config.reviewImageSize}
+            onChange={(v) => update('reviewImageSize', v as WidgetConfig['reviewImageSize'])}
+            options={[
+              { value: 'small', label: 'Small (40×40)' },
+              { value: 'medium', label: 'Medium (60×60)' },
+              { value: 'large', label: 'Large (80×80)' },
+            ]}
+          />
+        </Card>
+      </Section>
+
+      <Section title="Popup Settings">
         <Card>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Reviews Per Page">
               <NumberInput value={config.drawerReviewsPerPage} min={1} max={50} onChange={(v) => update('drawerReviewsPerPage', v)} />
             </Field>
             <Field label="Width (px)">
-              <NumberInput value={config.drawerWidth} min={280} max={800} onChange={(v) => update('drawerWidth', v)} />
+              <NumberInput value={config.drawerWidth} min={280} max={1000} onChange={(v) => update('drawerWidth', v)} />
             </Field>
           </div>
           <div className="mt-4">

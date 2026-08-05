@@ -7,7 +7,7 @@ import { WidgetEditor, type EditorWidget } from '@/components/editor/WidgetEdito
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Google Reviews Widget — Editor',
+  title: 'Google Reviews Badge — Editor',
 };
 
 export default async function GoogleReviewsWidgetPage({

@@ -74,6 +74,7 @@ export interface WidgetConfig {
   drawerShowAuthorPhotos: boolean;
   drawerShowReviewImages: boolean;
   thumbnailSize: ThumbnailSize;
+  reviewImageSize: ThumbnailSize;
 
   // Settings — drawer behavior
   drawerReviewsPerPage: number;
@@ -139,9 +140,10 @@ export const defaultWidgetConfig: WidgetConfig = {
   drawerShowAuthorPhotos: true,
   drawerShowReviewImages: true,
   thumbnailSize: 'medium',
+  reviewImageSize: 'medium',
 
   drawerReviewsPerPage: 10,
-  drawerWidth: 400,
+  drawerWidth: 640,
   drawerMobileMode: 'peek',
 
   carouselWidthType: 'percentage',
@@ -209,9 +211,10 @@ export function configFromDbRow(row: Record<string, any>): WidgetConfig {
     drawerShowAuthorPhotos: row.drawer_show_author_photos ?? true,
     drawerShowReviewImages: row.drawer_show_review_images ?? true,
     thumbnailSize: row.thumbnail_size ?? 'medium',
+    reviewImageSize: row.review_image_size ?? 'medium',
 
     drawerReviewsPerPage: row.drawer_reviews_per_page ?? 10,
-    drawerWidth: row.drawer_width ?? 400,
+    drawerWidth: row.drawer_width ?? 640,
     drawerMobileMode: row.drawer_mobile_mode ?? 'peek',
 
     carouselWidthType: row.carousel_width_type ?? 'percentage',
@@ -274,6 +277,7 @@ export function configToDbRow(config: WidgetConfig): Record<string, unknown> {
     drawer_show_author_photos: config.drawerShowAuthorPhotos,
     drawer_show_review_images: config.drawerShowReviewImages,
     thumbnail_size: config.thumbnailSize,
+    review_image_size: config.reviewImageSize,
 
     drawer_reviews_per_page: config.drawerReviewsPerPage,
     drawer_width: config.drawerWidth,
