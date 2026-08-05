@@ -352,6 +352,10 @@ export function GoogleReviewsCarousel({
               }}
               style={{
                 flex: '0 0 100%',
+                // Without this the flex item's automatic minimum (its
+                // min-content) clamps the slide wider than the viewport and
+                // the last card gets cut off horizontally.
+                minWidth: 0,
                 display: 'flex',
                 // Cards take their own content height (not stretched per row).
                 alignItems: 'flex-start',
