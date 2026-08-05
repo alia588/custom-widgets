@@ -6,6 +6,7 @@ import { reviews as hardcodedReviews } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx } from '@/lib/widget-config';
 import { Star, GoogleLogo } from './GoogleReviewsWidget';
+import { ReviewLightbox } from './ReviewLightbox';
 
 function Avatar({
   name,
@@ -79,6 +80,7 @@ export function GoogleReviewsPanel({
   reviews = hardcodedReviews,
 }: GoogleReviewsPanelProps) {
   const [visibleCount, setVisibleCount] = useState(config.drawerReviewsPerPage);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -158,6 +160,8 @@ export function GoogleReviewsPanel({
 
   return (
     <>
+      {lightbox && <ReviewLightbox src={lightbox} onClose={() => setLightbox(null)} />}
+
       {isOpen && (
         <div
           style={{
@@ -289,11 +293,13 @@ export function GoogleReviewsPanel({
                       key={i}
                       src={src}
                       alt=""
+                      onClick={() => setLightbox(src)}
                       style={{
                         width: `${avatarSize}px`,
                         height: `${avatarSize}px`,
                         borderRadius: '8px',
                         objectFit: 'cover',
+                        cursor: 'zoom-in',
                       }}
                     />
                   ))}

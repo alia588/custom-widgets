@@ -6,6 +6,7 @@ import type { WidgetConfig } from '@/lib/widget-config';
 import { resolveFontFamily, thumbnailSizePx } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleLogo } from './GoogleReviewsWidget';
+import { ReviewLightbox } from './ReviewLightbox';
 
 function Star({ size, color, filled }: { size: number; color: string; filled: boolean }) {
   return (
@@ -46,6 +47,7 @@ export function GoogleReviewsCarousel({
   reviews?: Review[];
 }) {
   const [page, setPage] = useState(0);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
@@ -232,11 +234,13 @@ export function GoogleReviewsCarousel({
               key={i}
               src={src}
               alt=""
+              onClick={() => setLightbox(src)}
               style={{
                 width: `${avatarSize}px`,
                 height: `${avatarSize}px`,
                 borderRadius: '6px',
                 objectFit: 'cover',
+                cursor: 'zoom-in',
               }}
             />
           ))}
@@ -282,6 +286,8 @@ export function GoogleReviewsCarousel({
         .cw-carousel-text::-webkit-scrollbar-track { background: transparent; }
         .cw-carousel-text::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.3); border-radius: 9999px; }
       `}</style>
+
+      {lightbox && <ReviewLightbox src={lightbox} onClose={() => setLightbox(null)} />}
 
       {/* Header */}
       {(config.drawerShowBusinessInfo || config.carouselShowOverallRating) && business && (

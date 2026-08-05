@@ -47,6 +47,25 @@ export async function PATCH(
   delete body.id;
   delete body.created_at;
 
+  // When (re)assigning a business, refresh the cached reviews so embeds
+  // don't keep serving the previous business's reviews.
+  if (body.business_id) {
+    const { data: reviewRows } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('business_id', body.business_id);
+
+    body.cached_reviews = (reviewRows ?? []).map((r) => ({
+      id: r.google_review_id ?? r.id,
+      authorName: r.author_name ?? 'Anonymous',
+      authorPhotoUrl: r.author_photo_url ?? undefined,
+      rating: r.rating,
+      text: r.text ?? '',
+      relativeTime: r.relative_time ?? '',
+      images: r.images ?? [],
+    }));
+  }
+
   const { data, error } = await supabase
     .from('widgets')
     .update(body)
