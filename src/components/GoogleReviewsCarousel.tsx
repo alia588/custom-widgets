@@ -72,14 +72,19 @@ export function GoogleReviewsCarousel({
     })
     .slice(0, config.maxReviews);
 
-  // Responsive: never squeeze cards below ~240px wide. On narrow screens
-  // (phones, small embed slots) show fewer cards per slide than configured.
-  const MIN_CARD_WIDTH = 240;
+  // Responsive breakpoints: full count on desktop, 2 cards below 1024px,
+  // 1 card below 768px. The configured value is the desktop maximum.
   const perSlide = Math.max(
     1,
     Math.min(
       config.carouselReviewsPerSlide,
-      containerWidth != null ? Math.floor(containerWidth / MIN_CARD_WIDTH) : config.carouselReviewsPerSlide
+      containerWidth == null
+        ? config.carouselReviewsPerSlide
+        : containerWidth < 768
+          ? 1
+          : containerWidth < 1024
+            ? 2
+            : config.carouselReviewsPerSlide
     )
   );
   const pages: Review[][] = [];

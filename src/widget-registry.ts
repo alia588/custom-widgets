@@ -22,6 +22,10 @@ const registry: Record<string, WidgetComponent> = {
   '1cb98d3c-e962-45be-8fac-5859aa7143b8': GoogleReviewsEmbed as WidgetComponent,
   // GARYS AUTO COLLISION CENTER — ALIS Audi Q5 Before/After Slider
   'a4462581-5eff-453d-9509-b00ce07fb6aa': BeforeAfterEmbed as WidgetComponent,
+  // GARYS AUTO COLLISION CENTER — BMW X7 X40i Before/After Slider
+  '63ad3cd4-2a31-4b91-b965-f54b9335e8e3': BeforeAfterEmbed as WidgetComponent,
+  // GARYS AUTO COLLISION CENTER — S Class Before/After Slider
+  'db03edac-813a-4e04-881a-9eb122e2053e': BeforeAfterEmbed as WidgetComponent,
   // GARYS AUTO COLLISION CENTER — Google Reviews Carousel
   '7f3a9c2e-4b1d-4e8f-9a6c-2d5e8f1a3b7c': GoogleReviewsCarouselEmbed as WidgetComponent,
 };
