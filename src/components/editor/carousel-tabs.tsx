@@ -342,13 +342,21 @@ export function LayoutTab({ config, update }: CarouselTabProps) {
               onChange={(v) => update('carouselReviewsPerSlide', v)}
             />
           </Field>
-          <Slider
-            label="Max Width"
-            value={config.carouselMaxWidth}
-            min={400}
-            max={2000}
-            onChange={(v) => update('carouselMaxWidth', v)}
+          <Toggle
+            checked={config.carouselMaxWidthEnabled}
+            onChange={(v) => update('carouselMaxWidthEnabled', v)}
+            label="Cap Max Width"
+            description="Off by default — the carousel fills its parent. Turn on only if you want a pixel ceiling."
           />
+          {config.carouselMaxWidthEnabled && (
+            <Slider
+              label="Max Width"
+              value={config.carouselMaxWidth}
+              min={400}
+              max={2000}
+              onChange={(v) => update('carouselMaxWidth', v)}
+            />
+          )}
         </Card>
       </Section>
 

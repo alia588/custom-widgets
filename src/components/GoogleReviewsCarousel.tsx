@@ -305,7 +305,9 @@ export function GoogleReviewsCarousel({
     <div
       style={{
         ...widthStyle,
-        maxWidth: `${config.carouselMaxWidth}px`,
+        ...(config.carouselMaxWidthEnabled
+          ? { maxWidth: `${config.carouselMaxWidth}px` }
+          : {}),
         margin: '0 auto',
         boxSizing: 'border-box',
         // Insurance against any child poking out sideways on small screens —

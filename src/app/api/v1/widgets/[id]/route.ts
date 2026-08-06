@@ -46,7 +46,8 @@ export async function GET(
        drawer_show_business_info, drawer_show_star_ratings, drawer_show_dates,
        drawer_show_author_photos, drawer_show_review_images, thumbnail_size, review_image_size,
        drawer_reviews_per_page, drawer_width, drawer_mobile_mode,
-       carousel_width_type, carousel_width_value, carousel_reviews_per_slide, carousel_max_width,
+       carousel_width_type, carousel_width_value, carousel_reviews_per_slide,
+       carousel_max_width_enabled, carousel_max_width,
        carousel_card_padding, carousel_card_gap, carousel_text_max_height, carousel_autoplay,
        carousel_show_overall_rating,
        businesses(name, place_id, address, total_reviews, average_rating)`

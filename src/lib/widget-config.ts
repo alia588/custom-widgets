@@ -85,6 +85,9 @@ export interface WidgetConfig {
   carouselWidthType: WidthType;
   carouselWidthValue: number;
   carouselReviewsPerSlide: number;
+  /** When false, the carousel fills its parent with no pixel cap. */
+  carouselMaxWidthEnabled: boolean;
+  /** Applied only when carouselMaxWidthEnabled is true. */
   carouselMaxWidth: number;
   carouselCardPadding: number;
   carouselCardGap: number;
@@ -149,6 +152,7 @@ export const defaultWidgetConfig: WidgetConfig = {
   carouselWidthType: 'percentage',
   carouselWidthValue: 100,
   carouselReviewsPerSlide: 5,
+  carouselMaxWidthEnabled: false,
   carouselMaxWidth: 1200,
   carouselCardPadding: 16,
   carouselCardGap: 16,
@@ -220,6 +224,7 @@ export function configFromDbRow(row: Record<string, any>): WidgetConfig {
     carouselWidthType: row.carousel_width_type ?? 'percentage',
     carouselWidthValue: row.carousel_width_value ?? 100,
     carouselReviewsPerSlide: row.carousel_reviews_per_slide ?? 5,
+    carouselMaxWidthEnabled: row.carousel_max_width_enabled ?? false,
     carouselMaxWidth: row.carousel_max_width ?? 1200,
     carouselCardPadding: row.carousel_card_padding ?? 16,
     carouselCardGap: row.carousel_card_gap ?? 16,
@@ -286,6 +291,7 @@ export function configToDbRow(config: WidgetConfig): Record<string, unknown> {
     carousel_width_type: config.carouselWidthType,
     carousel_width_value: config.carouselWidthValue,
     carousel_reviews_per_slide: config.carouselReviewsPerSlide,
+    carousel_max_width_enabled: config.carouselMaxWidthEnabled,
     carousel_max_width: config.carouselMaxWidth,
     carousel_card_padding: config.carouselCardPadding,
     carousel_card_gap: config.carouselCardGap,
