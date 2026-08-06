@@ -55,7 +55,9 @@ export function getRequestOrigin(request: Request): string | null {
 }
 
 export function isOriginAllowed(origin: string | null, allowedDomains: string[]): boolean {
-  if (allowedDomains.length === 0) return true;
+  // Strict mode: an empty whitelist blocks everyone. The dashboard fetches
+  // widget data server-side, so only cross-origin embed requests are affected.
+  if (allowedDomains.length === 0) return false;
   if (!origin) return false;
 
   let hostname: string;
@@ -94,30 +96,6 @@ export function getWidgetCorsHeaders(
 ): { allowed: false; headers: Record<string, string> } | { allowed: true; headers: Record<string, string> } {
   const origin = getRequestOrigin(request);
 
-  if (allowedDomains.length === 0) {
-    return {
-      allowed: true,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    };
-  }
-
-  // No Origin/Referer usually means a same-origin or server-to-server request;
-  // allow it so the dashboard preview keeps working.
-  if (!origin) {
-    return {
-      allowed: true,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    };
-  }
-
   if (!isOriginAllowed(origin, allowedDomains)) {
     return {
       allowed: false,
@@ -128,7 +106,7 @@ export function getWidgetCorsHeaders(
   return {
     allowed: true,
     headers: {
-      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Origin': origin || '*',
       'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Vary': 'Origin',
