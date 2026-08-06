@@ -434,6 +434,7 @@ export function SettingsTab({ config, update }: TabProps) {
               { value: 'small', label: 'Small (40×40)' },
               { value: 'medium', label: 'Medium (60×60)' },
               { value: 'large', label: 'Large (80×80)' },
+              { value: 'xl', label: 'XL (100×100)' },
             ]}
           />
         </Card>

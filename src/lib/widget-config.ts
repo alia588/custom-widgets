@@ -7,7 +7,7 @@ export type BadgeBackgroundType = 'transparent' | 'solid';
 export type Layout = 'centered' | 'horizontal';
 export type Position = 'inline' | 'fixed' | 'absolute';
 export type Alignment = 'center' | 'left' | 'right';
-export type ThumbnailSize = 'small' | 'medium' | 'large';
+export type ThumbnailSize = 'small' | 'medium' | 'large' | 'xl';
 export type MobileMode = 'peek' | 'fullscreen';
 export type WidthType = 'percentage' | 'fixed';
 
@@ -307,6 +307,7 @@ export const thumbnailSizePx: Record<ThumbnailSize, number> = {
   small: 40,
   medium: 60,
   large: 80,
+  xl: 100,
 };
 
 /**
