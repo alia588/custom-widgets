@@ -77,7 +77,12 @@ function buildEmbedCode(id: string) {
   return [
     '<!-- BuiltByShah Widget Embed -->',
     `<div data-bbs-embed="${id}"></div>`,
-    `<script src="${window.location.origin}/api/embeds/widget.js"></script>`,
+    // data.js is intentionally a classic blocking script: it runs during
+    // parse so the bootstrap payload exists before the async widget.js
+    // bundle executes — that's what makes the first paint skip the skeleton
+    // (see spec amendment 6).
+    `<script src="${window.location.origin}/api/embeds/widget/${id}/data.js"></script>`,
+    `<script async src="${window.location.origin}/api/embeds/widget.js"></script>`,
     '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }

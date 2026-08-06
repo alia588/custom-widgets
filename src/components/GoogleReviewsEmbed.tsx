@@ -4,48 +4,20 @@ import { useEffect, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configFromDbRow } from '@/lib/widget-config';
+import { getBootstrappedData } from '@/lib/bootstrap';
+import { getWidgetConfig, getWidgetReviews } from '@/lib/prefetch';
+import { mapBusinessRow, mapReviewsToClient } from '@/lib/widget-mappers';
 import { GoogleReviewsWidget } from './GoogleReviewsWidget';
 import { WidgetSkeleton } from './WidgetSkeleton';
 
-interface WidgetApiResponse {
-  id: string;
-  businesses?: {
-    name: string;
-    address: string | null;
-    total_reviews: number;
-    average_rating: number;
-  } | null;
-  [key: string]: unknown;
-}
-
-interface ReviewsApiResponse {
-  reviews: {
-    id: string;
-    authorName: string;
-    authorPhotoUrl?: string | null;
-    rating: number;
-    text: string;
-    relativeTime: string;
-    images?: string[];
-  }[];
-}
-
-function mapReviews(reviews: ReviewsApiResponse['reviews']): Review[] {
-  return reviews.map((r) => ({
-    id: r.id,
-    authorName: r.authorName,
-    authorPhotoUrl: r.authorPhotoUrl ?? undefined,
-    rating: r.rating,
-    text: r.text ?? '',
-    relativeTime: r.relativeTime ?? '',
-    images: r.images ?? [],
-  }));
-}
-
 /**
- * Embed loader: fetches the widget's config first (small payload) so the badge
- * can paint immediately, then loads reviews in the background. Used by
- * public/widget.js on external sites (GHL etc.).
+ * Embed loader. With the data.js bootstrap snippet the first React paint IS
+ * the real widget (config + business + reviews initialized synchronously from
+ * window.__BBS_WIDGET_DATA__); with legacy snippets it paints a skeleton and
+ * the script-eval-time prefetch (already in flight from embed.tsx) resolves
+ * right after mount. The API is always re-fetched in the background to
+ * revalidate, but state only updates when the payload actually differs — no
+ * spurious repaints.
  */
 export function GoogleReviewsEmbed({
   widgetId,
@@ -54,36 +26,52 @@ export function GoogleReviewsEmbed({
   widgetId: string;
   apiOrigin?: string;
 }) {
-  const [config, setConfig] = useState<WidgetConfig | null>(null);
-  const [business, setBusiness] = useState<BusinessInfo | undefined>(undefined);
-  const [reviews, setReviews] = useState<Review[] | undefined>(undefined);
+  const [config, setConfig] = useState<WidgetConfig | null>(() => {
+    const bootstrap = getBootstrappedData(widgetId);
+    return bootstrap?.kind === 'reviews'
+      ? configFromDbRow(bootstrap.config)
+      : null;
+  });
+  const [business, setBusiness] = useState<BusinessInfo | undefined>(() => {
+    const bootstrap = getBootstrappedData(widgetId);
+    return bootstrap?.kind === 'reviews'
+      ? (bootstrap.business ?? undefined)
+      : undefined;
+  });
+  const [reviews, setReviews] = useState<Review[] | undefined>(() => {
+    const bootstrap = getBootstrappedData(widgetId);
+    return bootstrap?.kind === 'reviews'
+      ? mapReviewsToClient(bootstrap.reviews ?? [])
+      : undefined;
+  });
   const [failed, setFailed] = useState(false);
 
-  // Load config + business first so the badge can render as fast as possible.
+  // Load config + business (deduped with the embed.tsx prefetch) so the badge
+  // can render; skip the failed flag when bootstrap already delivered data —
+  // a transient revalidation error must not blank a rendered widget.
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${apiOrigin}/api/v1/widgets/${widgetId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<WidgetApiResponse>;
-      })
+    getWidgetConfig(widgetId, apiOrigin)
       .then((row) => {
         if (cancelled) return;
-        const businessInfo: BusinessInfo | undefined = row.businesses
-          ? {
-              name: row.businesses.name,
-              address: row.businesses.address ?? '',
-              totalReviews: row.businesses.total_reviews,
-              averageRating: Number(row.businesses.average_rating),
-            }
-          : undefined;
-        setConfig(configFromDbRow(row));
-        setBusiness(businessInfo);
+        const nextConfig = configFromDbRow(row);
+        const nextBusiness = mapBusinessRow(row.businesses);
+
+        setConfig((current) =>
+          current && JSON.stringify(current) === JSON.stringify(nextConfig)
+            ? current
+            : nextConfig
+        );
+        setBusiness((current) =>
+          current && JSON.stringify(current) === JSON.stringify(nextBusiness)
+            ? current
+            : nextBusiness
+        );
       })
       .catch((err) => {
         console.warn(`[custom-widgets] Failed to load widget ${widgetId}:`, err);
-        if (!cancelled) setFailed(true);
+        if (!cancelled && !getBootstrappedData(widgetId)) setFailed(true);
       });
 
     return () => {
@@ -96,13 +84,15 @@ export function GoogleReviewsEmbed({
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<ReviewsApiResponse>;
-      })
+    getWidgetReviews(widgetId, apiOrigin)
       .then((data) => {
-        if (!cancelled) setReviews(mapReviews(data.reviews));
+        if (cancelled) return;
+        const next = mapReviewsToClient(data.reviews);
+        setReviews((current) =>
+          current && JSON.stringify(current) === JSON.stringify(next)
+            ? current
+            : next
+        );
       })
       .catch((err) => {
         console.warn(`[custom-widgets] Failed to load reviews for ${widgetId}:`, err);
@@ -114,7 +104,7 @@ export function GoogleReviewsEmbed({
   }, [widgetId, apiOrigin]);
 
   if (failed) return null;
-  if (!config) return <WidgetSkeleton />;
+  if (!config) return <WidgetSkeleton minHeight="60px" />;
 
   return (
     <GoogleReviewsWidget

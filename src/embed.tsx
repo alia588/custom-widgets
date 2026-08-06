@@ -1,5 +1,11 @@
 import { createRoot } from 'react-dom/client';
-import { getWidgetComponent } from './widget-registry';
+import { getWidgetComponent, getWidgetKind } from './widget-registry';
+import {
+  getBeforeAfterWidget,
+  getWidgetConfig,
+  getWidgetReviews,
+} from './lib/prefetch';
+import { getBootstrappedData } from './lib/bootstrap';
 import widgetStyles from './styles/widget.css?inline';
 
 // data-designdetail-embed is kept for backward compatibility with embeds
@@ -25,6 +31,53 @@ const SCRIPT_ORIGIN = (() => {
   return '';
 })();
 
+// Widgets whose prefetch was already kicked off; guards the DOMContentLoaded
+// pass against re-issuing (the prefetch module's promise cache would dedupe
+// anyway, this just avoids the re-scan).
+const prefetched = new Set<string>();
+
+function readWidgetId(placeholder: HTMLElement): string | null {
+  return (
+    placeholder.dataset.bbsEmbed ||
+    placeholder.dataset.customWidget ||
+    placeholder.dataset.designdetailEmbed ||
+    null
+  );
+}
+
+/**
+ * Starts the correct API prefetch for a placeholder before React mounts, so
+ * the request races the bundle instead of waiting for a fetch-in-useEffect
+ * waterfall. Skipped when the data.js bootstrap already delivered the payload
+ * (the components still background-revalidate on mount).
+ */
+function prefetchWidgetData(widgetId: string) {
+  if (prefetched.has(widgetId)) return;
+  if (getBootstrappedData(widgetId)) return;
+
+  const kind = getWidgetKind(widgetId);
+  if (!kind) return;
+  prefetched.add(widgetId);
+
+  if (kind === 'before-after') {
+    getBeforeAfterWidget(widgetId, SCRIPT_ORIGIN).catch(() => {});
+    return;
+  }
+
+  // reviews and carousel both need config + reviews
+  getWidgetConfig(widgetId, SCRIPT_ORIGIN).catch(() => {});
+  getWidgetReviews(widgetId, SCRIPT_ORIGIN).catch(() => {});
+}
+
+// Phase 1: widgets already in the DOM when this script evaluates (classic
+// snippets placed after the placeholder) get their data fetched immediately.
+document
+  .querySelectorAll<HTMLElement>(SELECTORS.join(', '))
+  .forEach((placeholder) => {
+    const widgetId = readWidgetId(placeholder);
+    if (widgetId) prefetchWidgetData(widgetId);
+  });
+
 function mountWidgets() {
   const placeholders = document.querySelectorAll<HTMLElement>(
     SELECTORS.join(', ')
@@ -36,15 +89,16 @@ function mountWidgets() {
   }
 
   placeholders.forEach((placeholder) => {
-    const widgetId =
-      placeholder.dataset.bbsEmbed ||
-      placeholder.dataset.customWidget ||
-      placeholder.dataset.designdetailEmbed;
+    const widgetId = readWidgetId(placeholder);
 
     if (!widgetId) {
       console.warn('[custom-widgets] Placeholder is missing a widget ID.');
       return;
     }
+
+    // Phase 2: pick up placeholders added after script eval (async widget.js
+    // on a busy page) and start their data fetch before mounting.
+    prefetchWidgetData(widgetId);
 
     const Widget = getWidgetComponent(widgetId);
 
