@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
-import { GoogleReviewsCarousel } from '@/components/GoogleReviewsCarousel';
+import { ScaledCarouselPreview } from '@/components/ScaledCarouselPreview';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './carousel-tabs';
 
 export interface CarouselEditorWidget {
@@ -232,14 +232,13 @@ export function CarouselEditor({
           <div className="absolute top-4 left-5 text-sm text-neutral-500">
             {widgetName} <span className="text-neutral-700">· live preview</span>
           </div>
-          <div className="flex h-full items-center justify-center overflow-y-auto p-10">
+          <div className="flex h-full items-start justify-center overflow-x-hidden overflow-y-auto p-10">
             <div className="w-full">
-              <GoogleReviewsCarousel
+              <ScaledCarouselPreview
                 key={selectedId}
                 config={config}
                 business={business}
                 reviews={reviews}
-                disableResponsive
               />
             </div>
           </div>

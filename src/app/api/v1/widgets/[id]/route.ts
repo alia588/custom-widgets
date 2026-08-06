@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import {
+  getAllowedDomains,
+  getWidgetCorsHeaders,
+} from '@/lib/domain-utils';
 
-// The embed script on external sites (GHL etc.) fetches this route
-// cross-origin, so permissive CORS headers are required.
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+export async function OPTIONS(request: Request) {
+  const allowedDomains = await getAllowedDomains();
+  const cors = getWidgetCorsHeaders(request, allowedDomains);
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+  return new NextResponse(null, {
+    status: cors.allowed ? 204 : 403,
+    headers: cors.headers,
+  });
 }
 
 export async function GET(
@@ -18,21 +20,48 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const allowedDomains = await getAllowedDomains();
+  const cors = getWidgetCorsHeaders(request, allowedDomains);
+
+  if (!cors.allowed) {
+    return NextResponse.json(
+      { error: 'Origin not allowed' },
+      { status: 403, headers: cors.headers }
+    );
+  }
 
   const { data, error } = await supabase
     .from('widgets')
-    .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+    .select(
+      `id, business_id, widget_type, name, created_at, updated_at, last_synced_at,
+       sort_by, min_rating, image_filtering, max_reviews, excluded_review_ids,
+       custom_business_name_enabled, custom_business_name,
+       use_site_theme, badge_background_type, badge_background_color, badge_border_color,
+       star_color, text_color, font_family, border_radius, padding, star_size, google_icon_size,
+       cta_background_color, cta_text_color,
+       drawer_background_color, drawer_text_color, drawer_card_background_color,
+       drawer_card_border_color, drawer_card_radius,
+       layout, position, alignment, full_width, cta_enabled, cta_text,
+       badge_show_business_name, badge_show_review_count, badge_compact_mode,
+       drawer_show_business_info, drawer_show_star_ratings, drawer_show_dates,
+       drawer_show_author_photos, drawer_show_review_images, thumbnail_size, review_image_size,
+       drawer_reviews_per_page, drawer_width, drawer_mobile_mode,
+       carousel_width_type, carousel_width_value, carousel_reviews_per_slide, carousel_max_width,
+       carousel_card_padding, carousel_card_gap, carousel_text_max_height, carousel_autoplay,
+       carousel_show_overall_rating,
+       businesses(name, place_id, address, total_reviews, average_rating)`
+    )
     .eq('id', id)
     .single();
 
   if (error || !data) {
     return NextResponse.json(
       { error: 'Widget not found' },
-      { status: 404, headers: CORS_HEADERS }
+      { status: 404, headers: cors.headers }
     );
   }
 
-  return NextResponse.json(data, { headers: CORS_HEADERS });
+  return NextResponse.json(data, { headers: cors.headers });
 }
 
 export async function PATCH(
@@ -76,11 +105,11 @@ export async function PATCH(
   if (error) {
     return NextResponse.json(
       { error: 'Update failed', message: error.message },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500 }
     );
   }
 
-  return NextResponse.json(data, { headers: CORS_HEADERS });
+  return NextResponse.json(data);
 }
 
 export async function DELETE(
@@ -94,9 +123,9 @@ export async function DELETE(
   if (error) {
     return NextResponse.json(
       { error: 'Delete failed', message: error.message },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500 }
     );
   }
 
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+  return new NextResponse(null, { status: 204 });
 }

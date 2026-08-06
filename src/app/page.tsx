@@ -82,7 +82,7 @@ export default async function Home() {
   );
 
   return (
-    <main className="min-h-screen bg-neutral-950 p-10 text-neutral-100">
+    <div className="min-h-screen p-10">
       <div className="mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold">Widgets</h1>
         <p className="mt-1 mb-8 text-neutral-500">
@@ -95,6 +95,6 @@ export default async function Home() {
           carouselItems={carouselItems}
         />
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import {
+  getAllowedDomains,
+  getWidgetCorsHeaders,
+} from '@/lib/domain-utils';
 
-// The embed script on external sites (GHL etc.) fetches this route
-// cross-origin, so permissive CORS headers are required.
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+export async function OPTIONS(request: Request) {
+  const allowedDomains = await getAllowedDomains();
+  const cors = getWidgetCorsHeaders(request, allowedDomains);
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+  return new NextResponse(null, {
+    status: cors.allowed ? 204 : 403,
+    headers: cors.headers,
+  });
 }
 
 export async function GET(
@@ -18,6 +20,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const allowedDomains = await getAllowedDomains();
+  const cors = getWidgetCorsHeaders(request, allowedDomains);
+
+  if (!cors.allowed) {
+    return NextResponse.json(
+      { error: 'Origin not allowed' },
+      { status: 403, headers: cors.headers }
+    );
+  }
 
   const { data, error } = await supabase
     .from('before_after_widgets')
@@ -28,11 +39,11 @@ export async function GET(
   if (error || !data) {
     return NextResponse.json(
       { error: 'Widget not found' },
-      { status: 404, headers: CORS_HEADERS }
+      { status: 404, headers: cors.headers }
     );
   }
 
-  return NextResponse.json(data, { headers: CORS_HEADERS });
+  return NextResponse.json(data, { headers: cors.headers });
 }
 
 export async function PATCH(
@@ -56,11 +67,11 @@ export async function PATCH(
   if (error) {
     return NextResponse.json(
       { error: 'Update failed', message: error.message },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500 }
     );
   }
 
-  return NextResponse.json(data, { headers: CORS_HEADERS });
+  return NextResponse.json(data);
 }
 
 export async function DELETE(
@@ -77,9 +88,9 @@ export async function DELETE(
   if (error) {
     return NextResponse.json(
       { error: 'Delete failed', message: error.message },
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500 }
     );
   }
 
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+  return new NextResponse(null, { status: 204 });
 }

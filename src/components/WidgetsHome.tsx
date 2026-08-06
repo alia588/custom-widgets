@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { beforeAfterToDbRow, defaultBeforeAfterConfig } from '@/lib/before-after-config';
@@ -28,6 +28,25 @@ export interface GoogleReviewsItem {
 }
 
 type WidgetTypeKey = 'before-after' | 'google-reviews' | 'google-reviews-carousel';
+
+const ITEMS_PER_PAGE = 9;
+
+function LoadMoreSentinel({ onLoadMore }: { onLoadMore: () => void }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) onLoadMore();
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onLoadMore]);
+  return <div ref={ref} className="col-span-full h-4" aria-hidden="true" />;
+}
 
 const widgetTypeMeta: Record<
   WidgetTypeKey,
@@ -316,6 +335,68 @@ function ConfirmDeleteModal({
 // Widget card (inside a type modal)
 // ---------------------------------------------------------------------------
 
+const CAROUSEL_THUMB_WIDTH = 1200;
+
+/**
+ * Renders the full carousel at a fixed desktop width and scales it down to
+ * fit the small card preview box (both dimensions), so the thumbnail shows
+ * the whole widget instead of a clipped full-size render.
+ */
+function CarouselThumbnail({ item }: { item: GoogleReviewsItem }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [geom, setGeom] = useState({ scale: 0, left: 0, top: 0 });
+
+  useEffect(() => {
+    const box = boxRef.current;
+    const content = contentRef.current;
+    if (!box || !content) return;
+    const measure = () => {
+      const bw = box.clientWidth;
+      const bh = box.clientHeight;
+      const ch = content.offsetHeight || 1;
+      if (!bw || !bh) return;
+      const scale = Math.min(bw / CAROUSEL_THUMB_WIDTH, bh / ch);
+      setGeom({
+        scale,
+        left: (bw - CAROUSEL_THUMB_WIDTH * scale) / 2,
+        top: Math.max(0, (bh - ch * scale) / 2),
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div className="h-full w-full bg-white p-2">
+      <div ref={boxRef} className="relative h-full w-full overflow-hidden">
+        <div
+          ref={contentRef}
+          style={{
+            position: 'absolute',
+            top: geom.top,
+            left: geom.left,
+            width: CAROUSEL_THUMB_WIDTH,
+            transform: `scale(${geom.scale})`,
+            transformOrigin: 'top left',
+            visibility: geom.scale ? 'visible' : 'hidden',
+          }}
+        >
+          <GoogleReviewsCarousel
+            config={item.config}
+            business={item.business}
+            reviews={item.reviews}
+            disableResponsive
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WidgetCard({
   name,
   editHref,
@@ -537,10 +618,13 @@ export function WidgetsHome({
   const [embedTarget, setEmbedTarget] = useState<EmbedTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [search, setSearch] = useState('');
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [beforeAfterItems, setBeforeAfterItems] = useState(initialBeforeAfter);
   const [googleReviewsItems, setGoogleReviewsItems] = useState(initialGoogleReviews);
   const [carouselItems, setCarouselItems] = useState(initialCarousel);
   const [busy, setBusy] = useState(false);
+
+  const query = search.trim().toLowerCase();
 
   // Escape closes the topmost popup first, then the list modal.
   useEffect(() => {
@@ -558,9 +642,24 @@ export function WidgetsHome({
   const close = () => {
     setOpenType(null);
     setSearch('');
+    setVisibleCount(ITEMS_PER_PAGE);
     setEmbedTarget(null);
     setDeleteTarget(null);
   };
+
+  const openModal = (type: WidgetTypeKey) => {
+    setOpenType(type);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => c + ITEMS_PER_PAGE);
+  }, []);
 
   // --- Before/After mutations ------------------------------------------------
 
@@ -705,9 +804,20 @@ export function WidgetsHome({
 
   // --- Modal content -----------------------------------------------------------
 
-  const query = search.trim().toLowerCase();
   const matches = (id: string, name: string) =>
     !query || name.toLowerCase().includes(query) || id.toLowerCase().includes(query);
+
+  const getFilteredItems = () => {
+    if (openType === 'before-after') return beforeAfterItems.filter((i) => matches(i.id, i.name));
+    if (openType === 'google-reviews') return googleReviewsItems.filter((i) => matches(i.id, i.name));
+    if (openType === 'google-reviews-carousel') return carouselItems.filter((i) => matches(i.id, i.name));
+    return [];
+  };
+
+  const filteredItems = getFilteredItems();
+  const openCount = filteredItems.length;
+  const visibleItems = filteredItems.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredItems.length;
 
   const renderGoogleReviewsCard = (
     item: GoogleReviewsItem,
@@ -727,15 +837,10 @@ export function WidgetsHome({
         }
         onDelete={() => setDeleteTarget({ type, id: item.id, name: item.name })}
       >
-        <div className="bg-white p-3">
-          {isCarousel ? (
-            <GoogleReviewsCarousel
-              config={{ ...item.config, carouselReviewsPerSlide: 3 }}
-              business={item.business}
-              reviews={item.reviews}
-              disableResponsive
-            />
-          ) : (
+        {isCarousel ? (
+          <CarouselThumbnail item={item} />
+        ) : (
+          <div className="bg-white p-3">
             <GoogleReviewsWidget
               widgetId={item.id}
               config={item.config}
@@ -743,16 +848,15 @@ export function WidgetsHome({
               reviews={item.reviews}
               preview
             />
-          )}
-        </div>
+          </div>
+        )}
       </WidgetCard>
     );
   };
 
   const renderModalBody = () => {
     if (openType === 'before-after') {
-      const items = beforeAfterItems.filter((i) => matches(i.id, i.name));
-      return items.map((item) => (
+      return (visibleItems as BeforeAfterItem[]).map((item) => (
         <WidgetCard
           key={item.id}
           name={item.name}
@@ -768,26 +872,17 @@ export function WidgetsHome({
       ));
     }
     if (openType === 'google-reviews') {
-      return googleReviewsItems
-        .filter((i) => matches(i.id, i.name))
-        .map((item) => renderGoogleReviewsCard(item, 'google-reviews'));
+      return (visibleItems as GoogleReviewsItem[]).map((item) =>
+        renderGoogleReviewsCard(item, 'google-reviews')
+      );
     }
     if (openType === 'google-reviews-carousel') {
-      return carouselItems
-        .filter((i) => matches(i.id, i.name))
-        .map((item) => renderGoogleReviewsCard(item, 'google-reviews-carousel'));
+      return (visibleItems as GoogleReviewsItem[]).map((item) =>
+        renderGoogleReviewsCard(item, 'google-reviews-carousel')
+      );
     }
     return null;
   };
-
-  const openCount =
-    openType === 'before-after'
-      ? beforeAfterItems.length
-      : openType === 'google-reviews'
-        ? googleReviewsItems.length
-        : openType === 'google-reviews-carousel'
-          ? carouselItems.length
-          : 0;
 
   const typeCards: {
     key: WidgetTypeKey | 'pricing-table';
@@ -879,7 +974,7 @@ export function WidgetsHome({
             <button
               key={card.key}
               type="button"
-              onClick={() => setOpenType(card.key as WidgetTypeKey)}
+              onClick={() => openModal(card.key as WidgetTypeKey)}
               className="group overflow-hidden rounded-xl bg-neutral-900 text-left ring-1 ring-neutral-800 transition-colors hover:ring-neutral-600"
             >
               <div className="h-44 bg-neutral-800/60">{card.mock}</div>
@@ -906,7 +1001,7 @@ export function WidgetsHome({
           onClick={close}
         >
           <div
-            className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-neutral-950 ring-1 ring-neutral-800"
+            className="flex max-h-[85vh] w-full max-w-[calc(100vw-6rem)] flex-col overflow-hidden rounded-2xl bg-neutral-950 ring-1 ring-neutral-800 sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -951,7 +1046,7 @@ export function WidgetsHome({
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search by name or ID..."
                   className="w-full rounded-lg bg-[#ffffff0a] py-2.5 pr-3 pl-9 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
                 />
@@ -975,11 +1070,12 @@ export function WidgetsHome({
             <div className="editor-scroll flex-1 overflow-y-auto p-5 pt-1">
               {openCount === 0 ? (
                 <div className="py-16 text-center text-sm text-neutral-500">
-                  No embeds yet.
+                  No embeds found.
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {renderModalBody()}
+                  {hasMore && <LoadMoreSentinel onLoadMore={loadMore} />}
                 </div>
               )}
             </div>

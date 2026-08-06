@@ -32,7 +32,18 @@ export default async function GoogleReviewsCarouselPage({
     .select('*')
     .order('name', { ascending: true });
 
-  const { data: reviewRows } = await supabase.from('reviews').select('*');
+  // PostgREST caps a single request at 1000 rows — page through all reviews.
+  const PAGE_SIZE = 1000;
+  const reviewRows: Record<string, any>[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .range(from, from + PAGE_SIZE - 1);
+    if (!data || data.length === 0) break;
+    reviewRows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+  }
 
   const reviewsByBusiness = new Map<string, Review[]>();
   for (const r of reviewRows ?? []) {

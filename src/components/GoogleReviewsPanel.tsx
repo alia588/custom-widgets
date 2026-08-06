@@ -1,8 +1,8 @@
 'use client';
 
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
-import { reviews as hardcodedReviews } from '@/lib/reviews-data';
+
 import type { WidgetConfig } from '@/lib/widget-config';
 import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
 import { GoogleLogo } from './GoogleReviewsWidget';
@@ -162,7 +162,7 @@ export function GoogleReviewsPanel({
   onClose,
   config = defaultWidgetConfig,
   business,
-  reviews = hardcodedReviews,
+  reviews = [],
 }: GoogleReviewsPanelProps) {
   const [visibleCount, setVisibleCount] = useState(config.drawerReviewsPerPage);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -194,27 +194,32 @@ export function GoogleReviewsPanel({
   const fullStars = Math.floor(businessInfo.averageRating);
   const hasHalfStar = businessInfo.averageRating % 1 >= 0.5;
 
-  const filtered = reviews
-    .filter((r) => r.rating >= config.minRating)
-    .filter((r) => !config.excludedReviewIds.includes(r.id))
-    .filter((r) => {
-      if (config.imageFiltering === 'images_only') return (r.images?.length ?? 0) > 0;
-      if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
-      return true;
-    })
-    .sort((a, b) => {
-      if (config.imageFiltering === 'images_first') {
-        const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
-        if (imgDiff !== 0) return imgDiff;
-      }
-      if (config.sortBy === 'highest_rating') return b.rating - a.rating;
-      if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
-      return 0;
-    })
-    .slice(0, config.maxReviews);
+  const filtered = useMemo(() => {
+    const excluded = new Set(config.excludedReviewIds);
+    return reviews
+      .filter((r) => r.rating >= config.minRating)
+      .filter((r) => !excluded.has(r.id))
+      .filter((r) => {
+        if (config.imageFiltering === 'images_only') return (r.images?.length ?? 0) > 0;
+        if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
+        return true;
+      })
+      .sort((a, b) => {
+        if (config.imageFiltering === 'images_first') {
+          const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
+          if (imgDiff !== 0) return imgDiff;
+        }
+        if (config.sortBy === 'highest_rating') return b.rating - a.rating;
+        if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
+        return 0;
+      })
+      .slice(0, config.maxReviews);
+  }, [reviews, config.minRating, config.excludedReviewIds, config.imageFiltering, config.sortBy, config.maxReviews]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
+
+  const isLoadingReviews = reviews.length === 0;
 
   const overlayStyle: CSSProperties = {
     position: 'fixed',
@@ -393,86 +398,100 @@ export function GoogleReviewsPanel({
                 flexDirection: 'column',
               }}
             >
-              {visible.map((review) => (
+              {isLoadingReviews ? (
                 <div
-                  key={review.id}
                   style={{
-                    padding: '20px 0',
-                    borderTop: `1px solid ${config.drawerCardBorderColor}`,
+                    padding: '40px 0',
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    color: config.drawerTextColor,
+                    opacity: 0.6,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Avatar
-                      name={review.authorName}
-                      photoUrl={review.authorPhotoUrl}
-                      size={avatarSize}
-                      show={config.drawerShowAuthorPhotos}
-                    />
-                    <div>
-                      <div
+                  Loading reviews…
+                </div>
+              ) : (
+                <>
+                  {visible.map((review) => (
+                    <div
+                      key={review.id}
+                      style={{
+                        padding: '20px 0',
+                        borderTop: `1px solid ${config.drawerCardBorderColor}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Avatar
+                          name={review.authorName}
+                          photoUrl={review.authorPhotoUrl}
+                          size={avatarSize}
+                          show={config.drawerShowAuthorPhotos}
+                        />
+                        <div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: 600,
+                              color: config.drawerTextColor,
+                            }}
+                          >
+                            {review.authorName}
+                            <VerifiedBadge size={16} color={config.starColor} />
+                          </div>
+                          {config.drawerShowDates && (
+                            <div style={{ fontSize: '13px', opacity: 0.55 }}>
+                              {review.relativeTime}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {config.drawerShowStarRatings && (
+                        <div style={{ marginTop: '8px', display: 'flex', gap: '2px' }}>
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <PopupStar key={i} size={18} color={config.starColor} filled={i < review.rating} />
+                          ))}
+                        </div>
+                      )}
+
+                      <p
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontWeight: 600,
+                          fontSize: '14px',
+                          lineHeight: 1.6,
+                          margin: '8px 0 0',
                           color: config.drawerTextColor,
                         }}
                       >
-                        {review.authorName}
-                        <VerifiedBadge size={16} color={config.starColor} />
-                      </div>
-                      {config.drawerShowDates && (
-                        <div style={{ fontSize: '13px', opacity: 0.55 }}>
-                          {review.relativeTime}
+                        {review.text}
+                      </p>
+
+                      {config.drawerShowReviewImages && (review.images?.length ?? 0) > 0 && (
+                        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {review.images!.map((src, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={i}
+                              src={googlePhotoVariant(src, reviewImageSize * 2)}
+                              alt=""
+                              onClick={() => setLightbox(src)}
+                              style={{
+                                width: `${reviewImageSize}px`,
+                                height: `${reviewImageSize}px`,
+                                borderRadius: '8px',
+                                objectFit: 'cover',
+                                cursor: 'zoom-in',
+                              }}
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
-                  </div>
+                  ))}
 
-                  {config.drawerShowStarRatings && (
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '2px' }}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <PopupStar key={i} size={18} color={config.starColor} filled={i < review.rating} />
-                      ))}
-                    </div>
-                  )}
-
-                  <p
-                    style={{
-                      fontSize: '14px',
-                      lineHeight: 1.6,
-                      margin: '8px 0 0',
-                      color: config.drawerTextColor,
-                    }}
-                  >
-                    {review.text}
-                  </p>
-
-                  {config.drawerShowReviewImages && (review.images?.length ?? 0) > 0 && (
-                    <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {review.images!.map((src, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={i}
-                          src={googlePhotoVariant(src, reviewImageSize * 2)}
-                          alt=""
-                          onClick={() => setLightbox(src)}
-                          style={{
-                            width: `${reviewImageSize}px`,
-                            height: `${reviewImageSize}px`,
-                            borderRadius: '8px',
-                            objectFit: 'cover',
-                            cursor: 'zoom-in',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Load more — inline at the end of the list, visible only at the bottom */}
-              {hasMore && (
+                  {/* Load more — inline at the end of the list, visible only at the bottom */}
+                  {hasMore && (
                 <button
                   onClick={() => setVisibleCount((c) => c + config.drawerReviewsPerPage)}
                   style={{
@@ -492,7 +511,9 @@ export function GoogleReviewsPanel({
                   Load More
                 </button>
               )}
-            </div>
+            </>
+          )}
+        </div>
           </div>
         </div>
       )}

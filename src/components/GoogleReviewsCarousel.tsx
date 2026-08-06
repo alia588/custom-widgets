@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
@@ -55,24 +55,27 @@ export function GoogleReviewsCarousel({
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [viewportWidth, setViewportWidth] = useState<number | null>(null);
 
-  const filtered = reviews
-    .filter((r) => r.rating >= config.minRating)
-    .filter((r) => !config.excludedReviewIds.includes(r.id))
-    .filter((r) => {
-      if (config.imageFiltering === 'images_only') return (r.images?.length ?? 0) > 0;
-      if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
-      return true;
-    })
-    .sort((a, b) => {
-      if (config.imageFiltering === 'images_first') {
-        const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
-        if (imgDiff !== 0) return imgDiff;
-      }
-      if (config.sortBy === 'highest_rating') return b.rating - a.rating;
-      if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
-      return 0;
-    })
-    .slice(0, config.maxReviews);
+  const filtered = useMemo(() => {
+    const excluded = new Set(config.excludedReviewIds);
+    return reviews
+      .filter((r) => r.rating >= config.minRating)
+      .filter((r) => !excluded.has(r.id))
+      .filter((r) => {
+        if (config.imageFiltering === 'images_only') return (r.images?.length ?? 0) > 0;
+        if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
+        return true;
+      })
+      .sort((a, b) => {
+        if (config.imageFiltering === 'images_first') {
+          const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
+          if (imgDiff !== 0) return imgDiff;
+        }
+        if (config.sortBy === 'highest_rating') return b.rating - a.rating;
+        if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
+        return 0;
+      })
+      .slice(0, config.maxReviews);
+  }, [reviews, config.minRating, config.excludedReviewIds, config.imageFiltering, config.sortBy, config.maxReviews]);
 
   // Responsive breakpoints (embed only), based on the screen/viewport width:
   // configured count above 1024px, 2 cards at 768–1024px, 1 card below 768px.
@@ -86,12 +89,15 @@ export function GoogleReviewsCarousel({
           ? Math.min(config.carouselReviewsPerSlide, 2)
           : config.carouselReviewsPerSlide
   );
-  const pages: Review[][] = [];
-  for (let i = 0; i < filtered.length; i += perSlide) {
-    pages.push(filtered.slice(i, i + perSlide));
-  }
-  const pageCount = pages.length;
-  const currentPage = Math.min(page, Math.max(0, pageCount - 1));
+  const { pages, pageCount, currentPage } = useMemo(() => {
+    const pages: Review[][] = [];
+    for (let i = 0; i < filtered.length; i += perSlide) {
+      pages.push(filtered.slice(i, i + perSlide));
+    }
+    const pageCount = pages.length;
+    const currentPage = Math.min(page, Math.max(0, pageCount - 1));
+    return { pages, pageCount, currentPage };
+  }, [filtered, perSlide, page]);
 
   useEffect(() => {
     if (!config.carouselAutoplay || pageCount <= 1) return;
@@ -168,8 +174,10 @@ export function GoogleReviewsCarousel({
           (review.authorPhotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={review.authorPhotoUrl}
+              src={googlePhotoVariant(review.authorPhotoUrl, Math.round(avatarSize / 1.5))}
               alt={review.authorName}
+              loading="lazy"
+              referrerPolicy="no-referrer"
               style={{
                 width: `${avatarSize / 1.5}px`,
                 height: `${avatarSize / 1.5}px`,

@@ -37,9 +37,16 @@ const buildOptions = {
   platform: 'browser',
   target: 'es2020',
   jsx: 'automatic',
+  jsxImportSource: 'preact',
   minify: !watch,
   plugins: [cssInlinePlugin],
   logLevel: 'info',
+  alias: {
+    react: 'preact/compat',
+    'react-dom': 'preact/compat',
+    'react/jsx-runtime': 'preact/jsx-runtime',
+    'react/jsx-dev-runtime': 'preact/jsx-dev-runtime',
+  },
 };
 
 if (watch) {

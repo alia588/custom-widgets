@@ -5,6 +5,7 @@ import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configFromDbRow } from '@/lib/widget-config';
 import { GoogleReviewsCarousel } from './GoogleReviewsCarousel';
+import { WidgetSkeleton } from './WidgetSkeleton';
 
 interface WidgetApiResponse {
   id: string;
@@ -14,7 +15,11 @@ interface WidgetApiResponse {
     total_reviews: number;
     average_rating: number;
   } | null;
-  cached_reviews?: {
+  [key: string]: unknown;
+}
+
+interface ReviewsApiResponse {
+  reviews: {
     id: string;
     authorName: string;
     authorPhotoUrl?: string | null;
@@ -23,13 +28,24 @@ interface WidgetApiResponse {
     relativeTime: string;
     images?: string[];
   }[];
-  [key: string]: unknown;
+}
+
+function mapReviews(reviews: ReviewsApiResponse['reviews']): Review[] {
+  return reviews.map((r) => ({
+    id: r.id,
+    authorName: r.authorName,
+    authorPhotoUrl: r.authorPhotoUrl ?? undefined,
+    rating: r.rating,
+    text: r.text ?? '',
+    relativeTime: r.relativeTime ?? '',
+    images: r.images ?? [],
+  }));
 }
 
 /**
- * Embed loader: fetches the carousel widget's config + cached reviews from
- * the host app's API and renders the carousel. Used by public/widget.js on
- * external sites — the page only provides the widget ID via data attribute.
+ * Embed loader: fetches the carousel widget's config first (small payload) so
+ * the container can paint immediately, then loads reviews. Used by
+ * public/widget.js on external sites.
  */
 export function GoogleReviewsCarouselEmbed({
   widgetId,
@@ -38,11 +54,9 @@ export function GoogleReviewsCarouselEmbed({
   widgetId: string;
   apiOrigin?: string;
 }) {
-  const [data, setData] = useState<{
-    config: WidgetConfig;
-    business?: BusinessInfo;
-    reviews?: Review[];
-  } | null>(null);
+  const [config, setConfig] = useState<WidgetConfig | null>(null);
+  const [business, setBusiness] = useState<BusinessInfo | undefined>(undefined);
+  const [reviews, setReviews] = useState<Review[] | undefined>(undefined);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -55,7 +69,7 @@ export function GoogleReviewsCarouselEmbed({
       })
       .then((row) => {
         if (cancelled) return;
-        const business: BusinessInfo | undefined = row.businesses
+        const businessInfo: BusinessInfo | undefined = row.businesses
           ? {
               name: row.businesses.name,
               address: row.businesses.address ?? '',
@@ -63,16 +77,8 @@ export function GoogleReviewsCarouselEmbed({
               averageRating: Number(row.businesses.average_rating),
             }
           : undefined;
-        const reviews: Review[] | undefined = row.cached_reviews?.map((r) => ({
-          id: r.id,
-          authorName: r.authorName,
-          authorPhotoUrl: r.authorPhotoUrl ?? undefined,
-          rating: r.rating,
-          text: r.text ?? '',
-          relativeTime: r.relativeTime ?? '',
-          images: r.images ?? [],
-        }));
-        setData({ config: configFromDbRow(row), business, reviews });
+        setConfig(configFromDbRow(row));
+        setBusiness(businessInfo);
       })
       .catch((err) => {
         console.warn(`[custom-widgets] Failed to load widget ${widgetId}:`, err);
@@ -84,13 +90,34 @@ export function GoogleReviewsCarouselEmbed({
     };
   }, [widgetId, apiOrigin]);
 
-  if (failed || !data) return null;
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<ReviewsApiResponse>;
+      })
+      .then((data) => {
+        if (!cancelled) setReviews(mapReviews(data.reviews));
+      })
+      .catch((err) => {
+        console.warn(`[custom-widgets] Failed to load reviews for ${widgetId}:`, err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [widgetId, apiOrigin]);
+
+  if (failed) return null;
+  if (!config) return <WidgetSkeleton />;
 
   return (
     <GoogleReviewsCarousel
-      config={data.config}
-      business={data.business}
-      reviews={data.reviews}
+      config={config}
+      business={business}
+      reviews={reviews}
     />
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { beforeAfterFromDbRow } from '@/lib/before-after-config';
 import { BeforeAfterWidget } from './BeforeAfterWidget';
+import { WidgetSkeleton } from './WidgetSkeleton';
 
 /**
  * Embed loader: fetches the before/after widget config from the host app's
@@ -41,7 +42,8 @@ export function BeforeAfterEmbed({
     };
   }, [widgetId, apiOrigin]);
 
-  if (failed || !config) return null;
+  if (failed) return null;
+  if (!config) return <WidgetSkeleton />;
 
   return <BeforeAfterWidget config={config} />;
 }
