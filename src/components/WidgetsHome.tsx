@@ -77,7 +77,12 @@ function buildEmbedCode(id: string) {
   return [
     '<!-- BuiltByShah Widget Embed -->',
     `<div data-bbs-embed="${id}"></div>`,
-    `<script src="${window.location.origin}/api/embeds/widget.js"></script>`,
+    // data.js is intentionally a classic blocking script: it runs during
+    // parse so the bootstrap payload exists before the async widget.js
+    // bundle executes — that's what makes the first paint skip the skeleton
+    // (see spec amendment 6).
+    `<script src="${window.location.origin}/api/embeds/widget/${id}/data.js"></script>`,
+    `<script async src="${window.location.origin}/api/embeds/widget.js"></script>`,
     '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }
@@ -571,23 +576,6 @@ function CarouselMock() {
   );
 }
 
-function PricingMock() {
-  return (
-    <div className="flex h-full w-full items-center justify-center gap-3 p-4">
-      {['$50', '$150', '$300'].map((price, i) => (
-        <div key={price} className={`w-16 rounded-md bg-neutral-700/50 p-2 ${i === 2 ? 'opacity-60' : ''}`}>
-          <MockBar className="mb-1 h-1.5 w-8" />
-          <MockBar className="mb-0.5 h-1 w-full" />
-          <MockBar className="mb-0.5 h-1 w-full" />
-          <MockBar className="mb-1.5 h-1 w-2/3" />
-          <div className="text-[10px] font-bold text-neutral-300">{price}</div>
-          <MockBar className="mt-1 h-2 w-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Home + modal
 // ---------------------------------------------------------------------------
@@ -885,12 +873,11 @@ export function WidgetsHome({
   };
 
   const typeCards: {
-    key: WidgetTypeKey | 'pricing-table';
+    key: WidgetTypeKey;
     name: string;
     description: string;
     icon: ReactNode;
     mock: ReactNode;
-    disabled?: boolean;
   }[] = [
     {
       key: 'before-after',
@@ -906,22 +893,6 @@ export function WidgetsHome({
         </span>
       ),
       mock: <BeforeAfterMock />,
-    },
-    {
-      key: 'pricing-table',
-      name: 'Pricing Table',
-      description: 'Display dynamic pricing tables with car size filtering and package comparisons',
-      icon: (
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-purple-600/20 text-purple-400 ring-1 ring-purple-500/30">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-            <rect x="3" y="4" width="5" height="16" rx="1" />
-            <rect x="10" y="4" width="5" height="16" rx="1" />
-            <rect x="17" y="4" width="5" height="16" rx="1" />
-          </svg>
-        </span>
-      ),
-      mock: <PricingMock />,
-      disabled: true,
     },
     {
       key: 'google-reviews',
@@ -950,49 +921,28 @@ export function WidgetsHome({
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {typeCards.map((card) =>
-          card.disabled ? (
-            <div
-              key={card.key}
-              className="overflow-hidden rounded-xl bg-neutral-900 ring-1 ring-neutral-800 opacity-50"
-            >
-              <div className="h-44 bg-neutral-800/60">{card.mock}</div>
-              <div className="flex items-start gap-3 p-4">
-                {card.icon}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold">{card.name}</h2>
-                    <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
-                      Coming soon
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-neutral-500">{card.description}</p>
+        {typeCards.map((card) => (
+          <button
+            key={card.key}
+            type="button"
+            onClick={() => openModal(card.key)}
+            className="group overflow-hidden rounded-xl bg-neutral-900 text-left ring-1 ring-neutral-800 transition-colors hover:ring-neutral-600"
+          >
+            <div className="h-44 bg-neutral-800/60">{card.mock}</div>
+            <div className="flex items-start gap-3 p-4">
+              {card.icon}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold">{card.name}</h2>
+                  <span className="text-neutral-600 transition-transform group-hover:translate-x-1">
+                    →
+                  </span>
                 </div>
+                <p className="mt-0.5 text-xs text-neutral-500">{card.description}</p>
               </div>
             </div>
-          ) : (
-            <button
-              key={card.key}
-              type="button"
-              onClick={() => openModal(card.key as WidgetTypeKey)}
-              className="group overflow-hidden rounded-xl bg-neutral-900 text-left ring-1 ring-neutral-800 transition-colors hover:ring-neutral-600"
-            >
-              <div className="h-44 bg-neutral-800/60">{card.mock}</div>
-              <div className="flex items-start gap-3 p-4">
-                {card.icon}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold">{card.name}</h2>
-                    <span className="text-neutral-600 transition-transform group-hover:translate-x-1">
-                      →
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-neutral-500">{card.description}</p>
-                </div>
-              </div>
-            </button>
-          )
-        )}
+          </button>
+        ))}
       </div>
 
       {openType && (

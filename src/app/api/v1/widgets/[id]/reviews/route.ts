@@ -4,6 +4,7 @@ import {
   getAllowedDomains,
   getWidgetCorsHeaders,
 } from '@/lib/domain-utils';
+import { NO_STORE, WIDGET_CACHE_CONTROL } from '@/lib/cache-headers';
 
 export async function OPTIONS(request: Request) {
   const allowedDomains = await getAllowedDomains();
@@ -11,7 +12,9 @@ export async function OPTIONS(request: Request) {
 
   return new NextResponse(null, {
     status: cors.allowed ? 204 : 403,
-    headers: cors.headers,
+    headers: cors.allowed
+      ? cors.headers
+      : { ...cors.headers, 'Cache-Control': NO_STORE },
   });
 }
 
@@ -26,7 +29,7 @@ export async function GET(
   if (!cors.allowed) {
     return NextResponse.json(
       { error: 'Origin not allowed' },
-      { status: 403, headers: cors.headers }
+      { status: 403, headers: { ...cors.headers, 'Cache-Control': NO_STORE } }
     );
   }
 
@@ -39,12 +42,12 @@ export async function GET(
   if (error || !data) {
     return NextResponse.json(
       { error: 'Widget not found' },
-      { status: 404, headers: cors.headers }
+      { status: 404, headers: { ...cors.headers, 'Cache-Control': NO_STORE } }
     );
   }
 
   return NextResponse.json(
     { reviews: data.cached_reviews ?? [] },
-    { headers: cors.headers }
+    { headers: { ...cors.headers, 'Cache-Control': WIDGET_CACHE_CONTROL } }
   );
 }

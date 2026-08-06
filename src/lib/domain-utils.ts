@@ -1,6 +1,9 @@
 import { supabase } from './db';
 
-const ALLOWED_DOMAINS_CACHE_TTL_MS = 60_000;
+// 5-minute in-memory TTL: only helps warm serverless instances (the first
+// request to a fresh instance still reads allowed_domains), but cuts repeat
+// DB round-trips on the hot path.
+const ALLOWED_DOMAINS_CACHE_TTL_MS = 300_000;
 
 let allowedDomainsCache: {
   domains: string[];
@@ -99,7 +102,9 @@ export function getWidgetCorsHeaders(
   if (!isOriginAllowed(origin, allowedDomains)) {
     return {
       allowed: false,
-      headers: { 'Content-Type': 'application/json' },
+      // Vary: Origin keeps shared caches from serving one origin's 403 to
+      // another (review issue 9 / spec amendment 5).
+      headers: { 'Content-Type': 'application/json', 'Vary': 'Origin' },
     };
   }
 

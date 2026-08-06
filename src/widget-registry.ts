@@ -6,7 +6,9 @@ import { BeforeAfterEmbed } from './components/BeforeAfterEmbed';
 export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: string }>;
 
 /**
- * Maps widget IDs to React components.
+ * Maps widget IDs to { kind, component }. The kind tells the embed loader
+ * which endpoints to prefetch without comparing component references (spec
+ * amendment 7).
  *
  * The loader supports these data attributes:
  *   <div data-bbs-embed="WIDGET_ID"></div>          (current)
@@ -15,23 +17,52 @@ export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: stri
  *
  * Add new widgets here when a new widget row is created in Supabase.
  */
-const registry: Record<string, WidgetComponent> = {
+export type WidgetKind = 'reviews' | 'carousel' | 'before-after';
+
+interface RegistryEntry {
+  kind: WidgetKind;
+  component: WidgetComponent;
+}
+
+const registry: Record<string, RegistryEntry> = {
   // SSR Diesel Repairs — Google Reviews badge
-  '004a7b18-6bcc-4b2a-a8f9-454012312690': GoogleReviewsEmbed as WidgetComponent,
+  '004a7b18-6bcc-4b2a-a8f9-454012312690': {
+    kind: 'reviews',
+    component: GoogleReviewsEmbed as WidgetComponent,
+  },
   // GARYS AUTO COLLISION CENTER — Google Reviews badge
-  '1cb98d3c-e962-45be-8fac-5859aa7143b8': GoogleReviewsEmbed as WidgetComponent,
+  '1cb98d3c-e962-45be-8fac-5859aa7143b8': {
+    kind: 'reviews',
+    component: GoogleReviewsEmbed as WidgetComponent,
+  },
   // GARYS AUTO COLLISION CENTER — ALIS Audi Q5 Before/After Slider
-  'a4462581-5eff-453d-9509-b00ce07fb6aa': BeforeAfterEmbed as WidgetComponent,
+  'a4462581-5eff-453d-9509-b00ce07fb6aa': {
+    kind: 'before-after',
+    component: BeforeAfterEmbed as WidgetComponent,
+  },
   // GARYS AUTO COLLISION CENTER — BMW X7 X40i Before/After Slider
-  '63ad3cd4-2a31-4b91-b965-f54b9335e8e3': BeforeAfterEmbed as WidgetComponent,
+  '63ad3cd4-2a31-4b91-b965-f54b9335e8e3': {
+    kind: 'before-after',
+    component: BeforeAfterEmbed as WidgetComponent,
+  },
   // GARYS AUTO COLLISION CENTER — S Class Before/After Slider
-  'db03edac-813a-4e04-881a-9eb122e2053e': BeforeAfterEmbed as WidgetComponent,
+  'db03edac-813a-4e04-881a-9eb122e2053e': {
+    kind: 'before-after',
+    component: BeforeAfterEmbed as WidgetComponent,
+  },
   // GARYS AUTO COLLISION CENTER — Google Reviews Carousel
-  '7f3a9c2e-4b1d-4e8f-9a6c-2d5e8f1a3b7c': GoogleReviewsCarouselEmbed as WidgetComponent,
+  '7f3a9c2e-4b1d-4e8f-9a6c-2d5e8f1a3b7c': {
+    kind: 'carousel',
+    component: GoogleReviewsCarouselEmbed as WidgetComponent,
+  },
 };
 
 export function getWidgetComponent(widgetId: string): WidgetComponent | null {
-  return registry[widgetId] || null;
+  return registry[widgetId]?.component ?? null;
+}
+
+export function getWidgetKind(widgetId: string): WidgetKind | null {
+  return registry[widgetId]?.kind ?? null;
 }
 
 export function listWidgetIds(): string[] {

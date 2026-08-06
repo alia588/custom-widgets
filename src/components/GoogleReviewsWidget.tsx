@@ -109,9 +109,15 @@ export function buildBadgeStyles(config: WidgetConfig): {
   };
 
   const subtitle: CSSProperties = {
-    fontSize: config.badgeCompactMode ? '12px' : '14px',
+    fontSize: '12px',
+    fontWeight: 400,
     color: config.textColor,
-    opacity: 0.55,
+    opacity: 0.7,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     marginBottom: config.ctaEnabled && !horizontal ? '12px' : undefined,
   };
 
@@ -120,12 +126,12 @@ export function buildBadgeStyles(config: WidgetConfig): {
     background: config.ctaBackgroundColor,
     color: config.ctaTextColor,
     border: `1px solid ${config.badgeBorderColor}`,
-    padding: '8px 16px',
-    fontSize: '14px',
-    fontWeight: 600,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+    padding: '6px 14px',
+    fontSize: '11px',
+    fontWeight: 500,
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     position: horizontal ? 'static' : 'absolute',
-    bottom: horizontal ? undefined : '-16px',
+    bottom: horizontal ? undefined : '-10px',
     left: horizontal ? undefined : '50%',
     transform: horizontal ? undefined : 'translateX(-50%)',
     whiteSpace: 'nowrap',
@@ -173,6 +179,20 @@ export function GoogleReviewsWidget({
   if (config.badgeShowBusinessName) subtitleParts.push(displayName);
   if (config.badgeShowReviewCount) subtitleParts.push(`${businessInfo.totalReviews} reviews`);
 
+  const subtitleEl =
+    subtitleParts.length > 0 ? (
+      <div style={styles.subtitle}>
+        {subtitleParts.flatMap((part, i) =>
+          i === 0
+            ? [<span key={part}>{part}</span>]
+            : [
+                <span key={`${part}-dot`}>·</span>,
+                <span key={part}>{part}</span>,
+              ],
+        )}
+      </div>
+    ) : null;
+
   const openPanel = () => setIsOpen(true);
 
   return (
@@ -214,9 +234,7 @@ export function GoogleReviewsWidget({
                   ))}
                 </div>
               </div>
-              {subtitleParts.length > 0 && (
-                <div style={styles.subtitle}>{subtitleParts.join(' · ')}</div>
-              )}
+              {subtitleEl}
               {config.ctaEnabled && <div style={styles.cta}>{config.ctaText}</div>}
             </>
           ) : (
@@ -235,9 +253,7 @@ export function GoogleReviewsWidget({
                   ))}
                 </div>
               </div>
-              {subtitleParts.length > 0 && (
-                <div style={styles.subtitle}>{subtitleParts.join(' · ')}</div>
-              )}
+              {subtitleEl}
               {config.ctaEnabled && (
                 <div style={styles.cta}>{config.ctaText}</div>
               )}
