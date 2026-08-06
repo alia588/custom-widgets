@@ -157,7 +157,7 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
 
         {domains.length === 0 ? (
           <p className="text-sm text-neutral-500">
-            No domains restricted yet. When empty, all origins can load widgets.
+            No domains allowed yet. When empty, all embed requests are blocked.
           </p>
         ) : (
           <ul className="divide-y divide-neutral-800">
