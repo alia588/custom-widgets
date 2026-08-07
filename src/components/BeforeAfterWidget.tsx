@@ -154,6 +154,7 @@ export function BeforeAfterWidget({
 
   return (
     <div
+      data-bbs-widget="before-after"
       style={{
         ...widthStyle,
         margin: '0 auto',
@@ -167,6 +168,7 @@ export function BeforeAfterWidget({
     >
       <div
         ref={containerRef}
+        data-bbs-slider
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}

@@ -303,6 +303,7 @@ export function GoogleReviewsCarousel({
 
   return (
     <div
+      data-bbs-widget="carousel"
       style={{
         ...widthStyle,
         ...(config.carouselMaxWidthEnabled
