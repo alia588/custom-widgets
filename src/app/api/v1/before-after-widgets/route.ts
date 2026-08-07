@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import { requireAdmin } from '@/lib/require-admin';
 
 // Creates a before/after widget (used by the home-page modal for
 // "Create New" and duplicate).
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const body = await request.json();
 
   // Never trust client-supplied identity fields

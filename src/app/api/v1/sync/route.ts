@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { syncBusinessReviews } from '@/lib/sync-reviews';
+import { requireAdmin } from '@/lib/require-admin';
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const body = await request.json().catch(() => ({}));
   const placeId = body.placeId || process.env.SSR_PLACE_ID;
 

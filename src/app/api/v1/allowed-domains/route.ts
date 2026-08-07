@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { normalizeDomain } from '@/lib/domain-utils';
+import { requireAdmin } from '@/lib/require-admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { data, error } = await supabase
     .from('allowed_domains')
     .select('*')
@@ -21,6 +25,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   let body: { domain?: string };
   try {
     body = await request.json();

@@ -5,6 +5,7 @@ import {
   getWidgetCorsHeaders,
 } from '@/lib/domain-utils';
 import { NO_STORE, WIDGET_CACHE_CONTROL } from '@/lib/cache-headers';
+import { requireAdmin } from '@/lib/require-admin';
 
 export async function OPTIONS(request: Request) {
   const allowedDomains = await getAllowedDomains();
@@ -55,6 +56,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
   const body = await request.json();
 
@@ -83,6 +87,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
   const { error } = await supabase

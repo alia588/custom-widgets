@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import { requireAdmin } from '@/lib/require-admin';
 
 const BUCKET = 'widget-images';
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -14,6 +15,9 @@ const ALLOWED_TYPES = new Set([
 // Accepts a multipart form with a single `file` field, stores it in the
 // public widget-images bucket, and returns its public URL.
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const form = await request.formData();
   const file = form.get('file');
 

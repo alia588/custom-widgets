@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { normalizeDomain } from '@/lib/domain-utils';
+import { requireAdmin } from '@/lib/require-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
   let body: { domain?: string };
@@ -56,6 +60,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
   const { error, count } = await supabase

@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import { requireAdmin } from '@/lib/require-admin';
 
 /**
  * Serves cached reviews from Supabase only.
  * SerpAPI is never called here — refresh happens via POST /api/v1/sync.
+ * Admin-only: embeds use /api/v1/widgets/[id]/reviews instead.
  */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ placeId: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { placeId } = await params;
 
   const { data: business, error } = await supabase

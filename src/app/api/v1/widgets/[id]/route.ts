@@ -7,6 +7,7 @@ import {
 import { NO_STORE, WIDGET_CACHE_CONTROL } from '@/lib/cache-headers';
 import { WIDGET_SELECT } from '@/lib/widget-queries';
 import { mapReviewRow } from '@/lib/widget-mappers';
+import { requireAdmin } from '@/lib/require-admin';
 
 export async function OPTIONS(request: Request) {
   const allowedDomains = await getAllowedDomains();
@@ -57,6 +58,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
   const body = await request.json();
 
@@ -98,6 +102,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
 
   const { error } = await supabase.from('widgets').delete().eq('id', id);
