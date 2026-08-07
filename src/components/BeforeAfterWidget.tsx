@@ -112,7 +112,12 @@ export function BeforeAfterWidget({
     // Tap/drag anywhere on the image moves the slider. With capture touch
     // mode off, vertical touch scrolling still works (touch-action: pan-y).
     startDrag(e.clientX);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      // Synthetic/test pointer events may lack an active pointer id.
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Drag still works via pointermove on the element itself.
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {

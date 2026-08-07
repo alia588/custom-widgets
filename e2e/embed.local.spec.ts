@@ -52,7 +52,7 @@ test.describe('local embed harness', () => {
       { timeout: 30_000 }
     );
 
-    // Before/after slider handle responds to pointer drag
+    // Before/after slider responds to a real mouse drag (not synthetic events)
     await page.waitForFunction(
       (id) =>
         !!document
@@ -62,33 +62,34 @@ test.describe('local embed harness', () => {
       { timeout: 30_000 }
     );
 
-    const moved = await page.evaluate(async (id) => {
-      const host = document.querySelector(`[data-bbs-embed="${id}"]`) as HTMLElement | null;
-      const slider = host?.shadowRoot?.querySelector('[data-bbs-slider]') as HTMLElement | null;
-      if (!slider) return false;
-      const rect = slider.getBoundingClientRect();
-      const divider = () =>
-        Array.from(host!.shadowRoot!.querySelectorAll('[data-bbs-slider] > div')).find((d) =>
-          (d as HTMLElement).style.left?.includes('%')
-        ) as HTMLElement | undefined;
-      const beforeLeft = divider()?.style.left ?? '';
-      slider.dispatchEvent(
-        new PointerEvent('pointerdown', {
-          clientX: rect.left + rect.width * 0.2,
-          bubbles: true,
-        })
-      );
-      slider.dispatchEvent(
-        new PointerEvent('pointermove', {
-          clientX: rect.left + rect.width * 0.8,
-          bubbles: true,
-        })
-      );
-      slider.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 50));
-      const afterLeft = divider()?.style.left ?? '';
-      return beforeLeft !== afterLeft || afterLeft.includes('%');
-    }, GARYS_WIDGET_IDS.beforeAfterAudi);
-    expect(moved).toBe(true);
+    const slider = page
+      .locator(`[data-bbs-embed="${GARYS_WIDGET_IDS.beforeAfterAudi}"]`)
+      .locator('[data-bbs-slider]');
+
+    const readDividerLeft = () =>
+      page.evaluate((id) => {
+        const host = document.querySelector(`[data-bbs-embed="${id}"]`);
+        const el = Array.from(
+          host?.shadowRoot?.querySelectorAll('[data-bbs-slider] > div') ?? []
+        ).find((d) => (d as HTMLElement).style.left?.includes('%')) as
+          | HTMLElement
+          | undefined;
+        return el?.style.left ?? '';
+      }, GARYS_WIDGET_IDS.beforeAfterAudi);
+
+    const beforeLeft = await readDividerLeft();
+    const box = await slider.boundingBox();
+    expect(box).toBeTruthy();
+
+    await page.mouse.move(box!.x + box!.width * 0.2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.8, box!.y + box!.height / 2, {
+      steps: 8,
+    });
+    await page.mouse.up();
+
+    await expect
+      .poll(async () => readDividerLeft(), { timeout: 5_000 })
+      .not.toBe(beforeLeft);
   });
 });
