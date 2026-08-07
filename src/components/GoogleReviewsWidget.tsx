@@ -127,14 +127,13 @@ export function buildBadgeStyles(config: WidgetConfig): {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     width: horizontal ? undefined : '100%',
     maxWidth: '100%',
     minWidth: 0,
     flex: horizontal ? '1 1 auto' : undefined,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
+    textAlign: 'center',
     marginBottom: config.ctaEnabled && !horizontal ? '12px' : undefined,
   };
 
@@ -207,15 +206,7 @@ export function GoogleReviewsWidget({
         {subtitleParts.flatMap((part, i) =>
           i === 0
             ? [
-                <span
-                  key={part}
-                  style={{
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <span key={part} style={{ textAlign: 'center' }}>
                   {part}
                 </span>,
               ]
@@ -223,7 +214,7 @@ export function GoogleReviewsWidget({
                 <span key={`${part}-dot`} style={{ flexShrink: 0 }}>
                   ·
                 </span>,
-                <span key={part} style={{ flexShrink: 0 }}>
+                <span key={part} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                   {part}
                 </span>,
               ],
