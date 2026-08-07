@@ -48,10 +48,14 @@ export function buildBadgeStyles(config: WidgetConfig): {
       : config.badgeBackgroundColor;
 
   const horizontal = config.layout === 'horizontal';
+  const compact = config.badgeCompactMode;
 
   const wrapper: CSSProperties = {
     display: 'inline-flex',
     width: config.fullWidth ? '100%' : undefined,
+    maxWidth: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
     justifyContent:
       config.alignment === 'left'
         ? 'flex-start'
@@ -74,6 +78,7 @@ export function buildBadgeStyles(config: WidgetConfig): {
       wrapper.transform = 'translateX(-50%)';
     }
     wrapper.bottom = '20px';
+    wrapper.maxWidth = 'calc(100vw - 40px)';
   }
 
   const card: CSSProperties = {
@@ -81,14 +86,19 @@ export function buildBadgeStyles(config: WidgetConfig): {
     flexDirection: horizontal ? 'row' : 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: horizontal ? '20px' : `${Math.max(config.padding / 2, 6)}px`,
+    gap: horizontal ? 'clamp(8px, 2vw, 20px)' : `${Math.max(config.padding / 2, 6)}px`,
     background,
     borderRadius: `${config.borderRadius}px`,
-    padding: `${config.padding * 1.5}px ${config.padding * 2}px`,
+    padding: compact
+      ? `${config.padding}px ${Math.max(config.padding, 8)}px`
+      : `${config.padding * 1.5}px ${config.padding * 2}px`,
     fontFamily: resolveFontFamily(config.fontFamily),
     cursor: 'pointer',
     transition: 'transform 0.2s ease-out',
     width: config.fullWidth ? '100%' : undefined,
+    maxWidth: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
     textAlign: 'center',
     position: 'relative',
     border:
@@ -106,18 +116,25 @@ export function buildBadgeStyles(config: WidgetConfig): {
     fontWeight: 700,
     color: config.textColor,
     lineHeight: 1,
+    flexShrink: 0,
   };
 
   const subtitle: CSSProperties = {
-    fontSize: '12px',
+    fontSize: compact ? '11px' : '12px',
     fontWeight: 400,
     color: config.textColor,
     opacity: 0.7,
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     justifyContent: 'center',
+    width: horizontal ? undefined : '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    flex: horizontal ? '1 1 auto' : undefined,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
     marginBottom: config.ctaEnabled && !horizontal ? '12px' : undefined,
   };
 
@@ -126,8 +143,8 @@ export function buildBadgeStyles(config: WidgetConfig): {
     background: config.ctaBackgroundColor,
     color: config.ctaTextColor,
     border: `1px solid ${config.badgeBorderColor}`,
-    padding: '6px 14px',
-    fontSize: '11px',
+    padding: compact ? '5px 10px' : '6px 14px',
+    fontSize: compact ? '10px' : '11px',
     fontWeight: 500,
     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     position: horizontal ? 'static' : 'absolute',
@@ -135,6 +152,11 @@ export function buildBadgeStyles(config: WidgetConfig): {
     left: horizontal ? undefined : '50%',
     transform: horizontal ? undefined : 'translateX(-50%)',
     whiteSpace: 'nowrap',
+    maxWidth: horizontal ? '100%' : 'calc(100% - 8px)',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   };
 
   return { wrapper, card, rating, subtitle, cta };
@@ -184,10 +206,26 @@ export function GoogleReviewsWidget({
       <div style={styles.subtitle}>
         {subtitleParts.flatMap((part, i) =>
           i === 0
-            ? [<span key={part}>{part}</span>]
+            ? [
+                <span
+                  key={part}
+                  style={{
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {part}
+                </span>,
+              ]
             : [
-                <span key={`${part}-dot`}>·</span>,
-                <span key={part}>{part}</span>,
+                <span key={`${part}-dot`} style={{ flexShrink: 0 }}>
+                  ·
+                </span>,
+                <span key={part} style={{ flexShrink: 0 }}>
+                  {part}
+                </span>,
               ],
         )}
       </div>
