@@ -10,6 +10,19 @@ function isPublicEmbedPath(pathname: string): boolean {
   );
 }
 
+/** Client/embed critical alert intake (rate-limited in the route). */
+function isPublicAlertPath(pathname: string, method: string): boolean {
+  return pathname === '/api/v1/alerts' && method.toUpperCase() === 'POST';
+}
+
+/** Local Playwright harness — only when ENABLE_E2E_HARNESS=true. */
+function isE2eHarnessPath(pathname: string): boolean {
+  return (
+    process.env.ENABLE_E2E_HARNESS === 'true' &&
+    (pathname === '/e2e/harness' || pathname.startsWith('/e2e/harness/'))
+  );
+}
+
 /**
  * Cross-origin widget data APIs: only GET/OPTIONS are public (domain allowlist
  * enforced in the route). Mutations on the same paths require admin auth.
@@ -56,7 +69,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  if (pathname === '/login' || isPublicEmbedPath(pathname) || isPublicEmbedDataApi(pathname, method)) {
+  if (
+    pathname === '/login' ||
+    isPublicEmbedPath(pathname) ||
+    isPublicEmbedDataApi(pathname, method) ||
+    isPublicAlertPath(pathname, method) ||
+    isE2eHarnessPath(pathname)
+  ) {
     return response;
   }
 

@@ -6,6 +6,7 @@ import {
   getWidgetReviews,
 } from './lib/prefetch';
 import { getBootstrappedData } from './lib/bootstrap';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import widgetStyles from './styles/widget.css?inline';
 
 // data-designdetail-embed is kept for backward compatibility with embeds
@@ -121,7 +122,11 @@ function mountWidgets() {
     shadowRoot.appendChild(mountPoint);
 
     const root = createRoot(mountPoint);
-    root.render(<Widget widgetId={widgetId} apiOrigin={SCRIPT_ORIGIN} />);
+    root.render(
+      <ErrorBoundary scope={`embed:${widgetId}`} apiOrigin={SCRIPT_ORIGIN} fallback={null}>
+        <Widget widgetId={widgetId} apiOrigin={SCRIPT_ORIGIN} />
+      </ErrorBoundary>
+    );
   });
 }
 

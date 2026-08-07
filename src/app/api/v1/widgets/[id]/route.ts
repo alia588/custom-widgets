@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import { reportCritical } from '@/lib/alerts';
 import {
   getAllowedDomains,
   getWidgetCorsHeaders,
@@ -89,6 +90,11 @@ export async function PATCH(
     .single();
 
   if (error) {
+    await reportCritical({
+      title: 'Widget update failed',
+      message: error.message,
+      fingerprint: `widget-update-failed:${id}`,
+    });
     return NextResponse.json(
       { error: 'Update failed', message: error.message },
       { status: 500, headers: { 'Cache-Control': NO_STORE } }
@@ -110,6 +116,11 @@ export async function DELETE(
   const { error } = await supabase.from('widgets').delete().eq('id', id);
 
   if (error) {
+    await reportCritical({
+      title: 'Widget delete failed',
+      message: error.message,
+      fingerprint: `widget-delete-failed:${id}`,
+    });
     return NextResponse.json(
       { error: 'Delete failed', message: error.message },
       { status: 500, headers: { 'Cache-Control': NO_STORE } }

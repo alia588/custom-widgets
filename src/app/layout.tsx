@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/Sidebar';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { createClient } from '@/lib/supabase/server';
 import './globals.css';
 
@@ -25,7 +26,9 @@ export default async function RootLayout({
         {user ? (
           <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
             <Sidebar />
-            <main className="ml-16 flex-1">{children}</main>
+            <main className="ml-16 flex-1">
+              <ErrorBoundary scope="admin-shell">{children}</ErrorBoundary>
+            </main>
           </div>
         ) : (
           <>{children}</>
