@@ -91,7 +91,7 @@ export function buildBadgeStyles(config: WidgetConfig): {
     borderRadius: `${config.borderRadius}px`,
     padding: compact
       ? `${config.padding}px ${Math.max(config.padding, 8)}px`
-      : `${config.padding * 1.5}px ${config.padding * 2}px`,
+      : `${config.padding * 1.5}px 16px`,
     fontFamily: resolveFontFamily(config.fontFamily),
     cursor: 'pointer',
     transition: 'transform 0.2s ease-out',
