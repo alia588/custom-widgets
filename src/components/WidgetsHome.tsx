@@ -544,6 +544,12 @@ export function WidgetsHome({
   const [carouselItems, setCarouselItems] = useState(initialCarousel);
   const [busy, setBusy] = useState(false);
 
+  // Re-entrancy guard: the kit ConfirmDialog closes imperatively, so its
+  // Confirm button can be clicked twice before React re-renders — `busy`
+  // state closures would be stale. A ref reliably stops a second fetch
+  // (double-delete → 404 toast, double-duplicate → two copies).
+  const actionInFlightRef = useRef(false);
+
   const query = search.trim().toLowerCase();
 
   const close = () => {
@@ -570,6 +576,8 @@ export function WidgetsHome({
   // --- Before/After mutations ------------------------------------------------
 
   const duplicateBeforeAfter = async (item: BeforeAfterItem) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setBusy(true);
     try {
       const res = await fetch('/api/v1/before-after-widgets', {
@@ -594,12 +602,15 @@ export function WidgetsHome({
     } catch (err) {
       showToast(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
+      actionInFlightRef.current = false;
       setBusy(false);
     }
   };
 
   // Performs the delete once the user confirms in the popup.
   const confirmDelete = async (deleteTarget: DeleteTarget) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setBusy(true);
     try {
       const url =
@@ -620,6 +631,7 @@ export function WidgetsHome({
     } catch (err) {
       showToast(`Delete failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
+      actionInFlightRef.current = false;
       setBusy(false);
     }
   };
@@ -691,6 +703,8 @@ export function WidgetsHome({
     item: GoogleReviewsItem,
     setList: React.Dispatch<React.SetStateAction<GoogleReviewsItem[]>>
   ) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setBusy(true);
     try {
       const res = await fetch('/api/v1/widgets', {
@@ -714,6 +728,7 @@ export function WidgetsHome({
     } catch (err) {
       showToast(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
+      actionInFlightRef.current = false;
       setBusy(false);
     }
   };

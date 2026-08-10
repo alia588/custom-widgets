@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button, Card, CardDescription, CardHeader, CardTitle, Input } from '@/components/ui';
 import { showConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
@@ -21,6 +21,11 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Re-entrancy guard: the kit ConfirmDialog closes imperatively, so its
+  // Confirm button can be clicked twice before React re-renders — `loading`
+  // state closures would be stale. A ref reliably stops a second DELETE.
+  const actionInFlightRef = useRef(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +94,8 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
   };
 
   const doDelete = async (id: string) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/allowed-domains/${id}`, {
@@ -106,6 +113,7 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
     } catch {
       showToast('Failed to delete domain', 'error');
     } finally {
+      actionInFlightRef.current = false;
       setLoading(false);
     }
   };
