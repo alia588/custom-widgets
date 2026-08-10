@@ -1,35 +1,498 @@
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+@theme {
+  /* Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f4f6f8;
+  --color-bg-sidebar: #ffffff;
+  --color-bg-hover: #eef1f4;
+
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5c6570;
+  --color-text-muted: #8b949e;
+
+  --color-accent: #00a86b;
+  --color-accent-hover: #008f5b;
+  --color-accent-light: #e6f7f0;
+  --color-accent-dark: #007a4d;
+
+  --color-border: #e1e4e8;
+  --color-border-light: #f0f1f3;
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-light: #fef2f2;
+  --color-success: #00a86b;
+  --color-warning: #d97706;
+  --color-warning-light: #fffbeb;
+
+  /* Spacing scale */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Legacy aliases */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 6px -1px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 8px 16px -4px rgba(16, 24, 40, 0.1), 0 2px 4px rgba(16, 24, 40, 0.04);
+  --shadow-xl: 0 16px 32px -8px rgba(16, 24, 40, 0.14);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+
+  /* Motion durations */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --duration-slower: 450ms;
+
+  /* Motion easings */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Focus ring color (glow tint) */
+  --color-ring: color-mix(in srgb, var(--color-accent) 40%, transparent);
+
+  /* Glow shadows — focus rings & checked states */
+  --shadow-glow: 0 0 0 1px var(--color-accent), 0 4px 20px -6px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  --shadow-glow-danger: 0 0 0 1px var(--color-danger), 0 4px 20px -6px color-mix(in srgb, var(--color-danger) 45%, transparent);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Design kit v2 — motion language (unlayered, like the .ui-* rules) */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Reduced motion: global kill-switch (accessibility floor) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  overflow-x: hidden;
+/* Glow focus ring — the accent glow IS the focus treatment */
+.ui-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-glow);
 }
 
-/* Thin dark scrollbar for editor panels and popovers */
+/* Forced-colors fallback: glow shadows don't render in forced-colors mode,
+   so restore a high-contrast outline on every focusable control type. */
+@media (forced-colors: active) {
+  :is(input, button, select, textarea, [role="combobox"], [role="option"], [role="tab"]):focus-visible {
+    outline: 2px solid ButtonText;
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+
+  /* Custom Checkbox/Switch visuals: the native input is sr-only, so the
+     outline above is invisible — ring the visual box instead. */
+  input.sr-only:focus-visible + span {
+    outline: 2px solid ButtonText;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
+/* Checkbox check pop-in */
+@keyframes ui-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Badge status-dot pulse */
+@keyframes ui-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+:root {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f4f6f8;
+  --color-bg-sidebar: #ffffff;
+  --color-bg-hover: #eef1f4;
+
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5c6570;
+  --color-text-muted: #8b949e;
+
+  --color-accent: #00a86b;
+  --color-accent-hover: #008f5b;
+  --color-accent-light: #e6f7f0;
+  --color-accent-dark: #007a4d;
+
+  --color-border: #e1e4e8;
+  --color-border-light: #f0f1f3;
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-light: #fef2f2;
+  --color-success: #00a86b;
+  --color-warning: #d97706;
+  --color-warning-light: #fffbeb;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-8);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 2px 6px -1px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 8px 16px -4px rgba(16, 24, 40, 0.1), 0 2px 4px rgba(16, 24, 40, 0.04);
+  --shadow-xl: 0 16px 32px -8px rgba(16, 24, 40, 0.14);
+}
+
+* {
+  margin: 0;
+  box-sizing: border-box;
+  /* Do NOT zero padding here — unlayered * { padding:0 } beats Tailwind
+     @layer utilities and collapses every px-/p- class in the app. */
+}
+
+html {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Design-system controls: escape the touch-target min-size hammer */
+.ui-control,
+button.ui-control,
+a.ui-control,
+[role="button"].ui-control {
+  min-height: 0 !important;
+  min-width: 0 !important;
+}
+
+/* Explicit control metrics — unlayered so they always win over utility wars */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  border-style: solid;
+  border-width: 1px;
+  transition:
+    color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out),
+    translate var(--duration-base) var(--ease-out),
+    scale var(--duration-base) var(--ease-out);
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ui-btn-sm {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+  border-radius: 8px;
+  letter-spacing: -0.01em;
+}
+
+.ui-btn-md {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  border-radius: 10px;
+  letter-spacing: -0.01em;
+}
+
+.ui-btn-lg {
+  height: 44px;
+  padding: 0 24px;
+  font-size: 15px;
+  border-radius: 12px;
+  letter-spacing: -0.015em;
+}
+
+.ui-btn-icon {
+  padding: 0;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+.ui-btn-icon.ui-btn-sm {
+  width: 32px;
+}
+
+.ui-btn-icon.ui-btn-md {
+  width: 40px;
+}
+
+.ui-btn-icon.ui-btn-lg {
+  width: 44px;
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 500;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.ui-badge-sm {
+  padding: 4px 9px;
+  font-size: 10px;
+}
+
+/* Searchable combobox popup — SearchSelect / MultiSearchSelect */
+.ui-listbox {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  z-index: 50;
+  width: 100%;
+  transform-origin: top;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+}
+
+.ui-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.ui-option:hover:not([aria-disabled="true"]),
+.ui-option[data-active="true"] {
+  background-color: var(--color-bg-hover);
+}
+
+.ui-option[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-tabs-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9999px;
+  background: #e8e8ed;
+}
+
+.ui-tabs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  color: #6e6e73;
+  cursor: pointer;
+}
+
+.ui-tabs-trigger[aria-selected="true"],
+.ui-tabs-trigger[data-active="true"] {
+  background: #fff;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Tabs v2: when the sliding motion.div indicator renders, the trigger itself
+   must stay transparent so only the indicator provides the pill. */
+.ui-tabs-trigger[data-motion-indicator="true"][aria-selected="true"],
+.ui-tabs-trigger[data-motion-indicator="true"][data-active="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+.ui-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  border: none;
+  background: transparent;
+  color: #6e6e73;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ui-nav-item[data-active="true"] {
+  background: #1d1d1f;
+  color: #fff;
+}
+
+/* Prevent horizontal scrolling on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Mobile-first touch targets — never override design-system controls */
+button:not(.ui-control):not(.ui-btn):not(.ui-nav-item):not(.ui-tabs-trigger),
+a:not(.ui-control),
+input[type="button"]:not(.ui-control),
+input[type="submit"]:not(.ui-control),
+[role="button"]:not(.ui-control):not(.ui-btn):not(.ui-nav-item):not(.ui-tabs-trigger) {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 767px) {
+  button:not(.ui-control):not(.ui-btn):not(.ui-nav-item):not(.ui-tabs-trigger),
+  a:not(.ui-control),
+  input[type="button"]:not(.ui-control),
+  input[type="submit"]:not(.ui-control),
+  [role="button"]:not(.ui-control):not(.ui-btn):not(.ui-nav-item):not(.ui-tabs-trigger) {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+
+  /* Better spacing for mobile */
+  .mobile-padding {
+    padding: 16px;
+  }
+
+  /* Prevent text selection on buttons during tap */
+  button, [role="button"] {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  /* Better form inputs on mobile */
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Improve table scrolling on mobile - tables inside .table-scroll-container
+     are excluded; their parent handles scroll to avoid double scrollbars */
+  .table-scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll-container table {
+    display: table;
+    overflow-x: visible;
+  }
+  table:not(.table-scroll-container table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better modal sizing on mobile */
+  .modal-content {
+    max-width: 95vw;
+    max-height: 90vh;
+    margin: 20px auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Editor chrome (light theme) — admin-only helpers used by the widget
+   editors. Kept from the pre-kit admin, restyled for the light palette.
+--------------------------------------------------------------------------- */
+
+/* Thin scrollbar for editor panels and popovers */
 .editor-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: #d4d4d8 transparent;
 }
 
 .editor-scroll::-webkit-scrollbar {
@@ -42,12 +505,12 @@ body {
 }
 
 .editor-scroll::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #d4d4d8;
   border-radius: 9999px;
 }
 
 .editor-scroll::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #a1a1aa;
 }
 
 /* Custom range slider: gradient fill is set inline, this styles track + thumb */
@@ -67,8 +530,8 @@ body {
   height: 16px;
   border-radius: 9999px;
   background: #ffffff;
-  border: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   cursor: pointer;
 }
 
@@ -77,8 +540,8 @@ body {
   height: 16px;
   border-radius: 9999px;
   background: #ffffff;
-  border: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   cursor: pointer;
 }
 
