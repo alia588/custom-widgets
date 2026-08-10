@@ -7,6 +7,9 @@ import { beforeAfterToDbRow, defaultBeforeAfterConfig } from '@/lib/before-after
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow, defaultWidgetConfig } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
+import { Button, Input, Modal } from '@/components/ui';
+import { showConfirm } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/Toast';
 import { BeforeAfterWidget } from './BeforeAfterWidget';
 import { GoogleReviewsWidget } from './GoogleReviewsWidget';
 import { GoogleReviewsCarousel } from './GoogleReviewsCarousel';
@@ -133,206 +136,128 @@ function EmbedCodeModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      alert('Copy failed — clipboard is not available.');
+      showToast('Copy failed — clipboard is not available.', 'error');
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6"
-      onClick={onClose}
+    <Modal
+      open
+      onClose={onClose}
+      title={name}
+      description={typeLabel}
+      size="lg"
+      showClose
     >
-      <div
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-neutral-950 ring-1 ring-neutral-800"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 p-6 pb-4">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold break-words">{name}</h2>
-            <span className="mt-1.5 inline-block rounded-md bg-[#ffffff0a] px-2 py-0.5 text-xs font-medium text-neutral-300 ring-1 ring-neutral-800">
-              {typeLabel}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-shrink-0 rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-neutral-200"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="grid grid-cols-2 gap-2 px-6 pb-4">
-          <button
-            type="button"
-            onClick={() => setTab('code')}
-            className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-              tab === 'code'
-                ? 'bg-[#ffffff14] text-white'
-                : 'bg-[#ffffff06] text-neutral-400 hover:bg-[#ffffff0a] hover:text-neutral-200'
-            }`}
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-            </svg>
-            Copy Code
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('howto')}
-            className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-              tab === 'howto'
-                ? 'bg-[#ffffff14] text-white'
-                : 'bg-[#ffffff06] text-neutral-400 hover:bg-[#ffffff0a] hover:text-neutral-200'
-            }`}
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01" />
-            </svg>
-            How to Use
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="editor-scroll flex-1 overflow-y-auto px-6 pb-6">
-          {tab === 'code' ? (
-            <>
-              <h3 className="text-sm font-semibold text-neutral-100">Your Embed Code</h3>
-              <p className="mt-0.5 mb-3 text-xs text-neutral-500">
-                Copy this code to add the embed to your website
-              </p>
-              <div className="flex items-start gap-3 rounded-xl bg-[#ffffff06] p-4 ring-1 ring-neutral-800">
-                <pre className="min-w-0 flex-1 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-neutral-300">
-                  {code}
-                </pre>
-                <button
-                  type="button"
-                  onClick={copy}
-                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-semibold text-black transition-colors hover:bg-neutral-200"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <rect x="9" y="9" width="12" height="12" rx="2" />
-                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                  </svg>
-                  {copied ? 'Copied ✓' : 'Copy'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 className="text-sm font-semibold text-neutral-100">How to Add This Embed</h3>
-              <p className="mt-0.5 mb-4 text-xs text-neutral-500">
-                Follow these steps to add the embed to your website
-              </p>
-
-              {[
-                {
-                  title: 'Find your code block or custom HTML section',
-                  body: 'Go to the page on your website where you want the embed to appear. Look for a code block, custom HTML, or embed component in your website builder or CMS.',
-                },
-                {
-                  title: 'Paste the embed code',
-                  body: 'Copy the code from the "Copy Code" tab and paste it into the code block or custom HTML section where you want the embed to display.',
-                },
-                {
-                  title: 'Save and publish',
-                  body: 'Save your changes and publish the page. The embed should appear immediately. If not, try clearing your browser cache or checking the troubleshooting tips below.',
-                },
-              ].map((step, i) => (
-                <div key={i} className="mb-4 flex gap-3">
-                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <div className="text-sm font-semibold text-neutral-100">{step.title}</div>
-                    <p className="mt-1 text-xs leading-relaxed text-neutral-500">{step.body}</p>
-                  </div>
-                </div>
-              ))}
-
-              <div className="mt-5 rounded-xl bg-[#ffffff06] p-4 ring-1 ring-neutral-800">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-100">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-                  </svg>
-                  Common Platforms
-                </div>
-                <ul className="space-y-1.5 text-xs text-neutral-400">
-                  <li><span className="font-semibold text-neutral-200">WordPress:</span> Add a “Custom HTML” block</li>
-                  <li><span className="font-semibold text-neutral-200">Squarespace:</span> Add a “Code” block</li>
-                  <li><span className="font-semibold text-neutral-200">Wix:</span> Add an “Embed Code” element</li>
-                  <li><span className="font-semibold text-neutral-200">Webflow:</span> Add an “Embed” element</li>
-                  <li><span className="font-semibold text-neutral-200">Shopify:</span> Edit theme and add to a custom liquid section</li>
-                </ul>
-              </div>
-            </>
-          )}
-        </div>
+      {/* Tabs */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setTab('code')}
+          className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+            tab === 'code'
+              ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] ring-1 ring-[var(--color-border)]'
+              : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+          </svg>
+          Copy Code
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('howto')}
+          className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+            tab === 'howto'
+              ? 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] ring-1 ring-[var(--color-border)]'
+              : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01" />
+          </svg>
+          How to Use
+        </button>
       </div>
-    </div>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// Delete confirmation popup
-// ---------------------------------------------------------------------------
-
-function ConfirmDeleteModal({
-  name,
-  busy,
-  onCancel,
-  onConfirm,
-}: {
-  name: string;
-  busy: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl bg-neutral-950 p-6 ring-1 ring-neutral-800"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-red-600/15 text-red-500">
-            <TrashIcon />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-base font-bold">Delete this embed?</h2>
-            <p className="mt-1 text-sm break-words text-neutral-500">
-              “{name}” will be permanently deleted. This cannot be undone.
-            </p>
+      {tab === 'code' ? (
+        <>
+          <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Your Embed Code</h3>
+          <p className="mt-0.5 mb-3 text-xs text-[var(--color-text-secondary)]">
+            Copy this code to add the embed to your website
+          </p>
+          <div className="flex items-start gap-3 rounded-xl bg-[var(--color-bg-secondary)] p-4 ring-1 ring-[var(--color-border)]">
+            <pre className="min-w-0 flex-1 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-[var(--color-text-secondary)]">
+              {code}
+            </pre>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={copy}
+              iconLeft={
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="12" height="12" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              }
+            >
+              {copied ? 'Copied ✓' : 'Copy'}
+            </Button>
           </div>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            className="flex-1 rounded-lg bg-[#ffffff0a] py-2.5 text-sm font-medium text-neutral-200 transition-colors hover:bg-[#ffffff14] disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
-          >
-            {busy ? 'Deleting…' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </div>
+        </>
+      ) : (
+        <>
+          <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">How to Add This Embed</h3>
+          <p className="mt-0.5 mb-4 text-xs text-[var(--color-text-secondary)]">
+            Follow these steps to add the embed to your website
+          </p>
+
+          {[
+            {
+              title: 'Find your code block or custom HTML section',
+              body: 'Go to the page on your website where you want the embed to appear. Look for a code block, custom HTML, or embed component in your website builder or CMS.',
+            },
+            {
+              title: 'Paste the embed code',
+              body: 'Copy the code from the "Copy Code" tab and paste it into the code block or custom HTML section where you want the embed to display.',
+            },
+            {
+              title: 'Save and publish',
+              body: 'Save your changes and publish the page. The embed should appear immediately. If not, try clearing your browser cache or checking the troubleshooting tips below.',
+            },
+          ].map((step, i) => (
+            <div key={i} className="mb-4 flex gap-3">
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-secondary)] text-xs font-bold text-[var(--color-text-primary)] ring-1 ring-[var(--color-border)]">
+                {i + 1}
+              </span>
+              <div>
+                <div className="text-sm font-semibold text-[var(--color-text-primary)]">{step.title}</div>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">{step.body}</p>
+              </div>
+            </div>
+          ))}
+
+          <div className="mt-5 rounded-xl bg-[var(--color-bg-secondary)] p-4 ring-1 ring-[var(--color-border)]">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+              </svg>
+              Common Platforms
+            </div>
+            <ul className="space-y-1.5 text-xs text-[var(--color-text-secondary)]">
+              <li><span className="font-semibold text-[var(--color-text-primary)]">WordPress:</span> Add a “Custom HTML” block</li>
+              <li><span className="font-semibold text-[var(--color-text-primary)]">Squarespace:</span> Add a “Code” block</li>
+              <li><span className="font-semibold text-[var(--color-text-primary)]">Wix:</span> Add an “Embed Code” element</li>
+              <li><span className="font-semibold text-[var(--color-text-primary)]">Webflow:</span> Add an “Embed” element</li>
+              <li><span className="font-semibold text-[var(--color-text-primary)]">Shopify:</span> Edit theme and add to a custom liquid section</li>
+            </ul>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }
 
@@ -420,10 +345,10 @@ function WidgetCard({
   const router = useRouter();
 
   return (
-    <div className="group rounded-xl bg-neutral-900 p-3 ring-1 ring-neutral-800">
+    <div className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]">
       {/* Preview with hover actions */}
       <div className="relative">
-        <div className="pointer-events-none h-44 overflow-hidden rounded-lg bg-neutral-800">
+        <div className="pointer-events-none h-44 overflow-hidden rounded-lg bg-[var(--color-bg-secondary)]">
           {children}
         </div>
         <div className="absolute top-3 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -431,7 +356,7 @@ function WidgetCard({
             type="button"
             onClick={onDuplicate}
             title="Duplicate"
-            className="rounded-md bg-black/70 p-1.5 text-neutral-300 transition-colors hover:bg-black hover:text-white"
+            className="rounded-md bg-white/80 p-1.5 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-white hover:text-[var(--color-text-primary)]"
           >
             <DuplicateIcon />
           </button>
@@ -439,7 +364,7 @@ function WidgetCard({
             type="button"
             onClick={onDelete}
             title="Delete"
-            className="rounded-md bg-black/70 p-1.5 text-neutral-300 transition-colors hover:bg-red-600 hover:text-white"
+            className="rounded-md bg-white/80 p-1.5 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-danger)] hover:text-white"
           >
             <TrashIcon />
           </button>
@@ -447,32 +372,40 @@ function WidgetCard({
       </div>
 
       {/* Name */}
-      <div className="mt-3 truncate text-sm font-semibold text-neutral-100" title={name}>
+      <div className="mt-3 truncate text-sm font-semibold text-[var(--color-text-primary)]" title={name}>
         {name}
       </div>
 
       {/* Actions */}
       <div className="mt-2 flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
+          fullWidth
           onClick={onCopyCode}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#ffffff0a] py-2 text-xs font-medium text-neutral-200 transition-colors hover:bg-[#ffffff14]"
+          iconLeft={
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+            </svg>
+          }
         >
-          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-          </svg>
           Copy Code
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
+          fullWidth
           onClick={() => router.push(editHref)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#ffffff0a] py-2 text-xs font-medium text-neutral-200 transition-colors hover:bg-[#ffffff14]"
+          iconLeft={
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+            </svg>
+          }
         >
-          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-          </svg>
           Edit
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -532,7 +465,7 @@ function GoogleReviewsMock() {
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         ))}
-        <span className="text-xs font-semibold text-neutral-300">4.9</span>
+        <span className="text-xs font-semibold text-neutral-500">4.9</span>
       </div>
       <div className="flex gap-2">
         <MiniReviewCard />
@@ -604,7 +537,6 @@ export function WidgetsHome({
   const router = useRouter();
   const [openType, setOpenType] = useState<WidgetTypeKey | null>(null);
   const [embedTarget, setEmbedTarget] = useState<EmbedTarget | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [beforeAfterItems, setBeforeAfterItems] = useState(initialBeforeAfter);
@@ -614,25 +546,11 @@ export function WidgetsHome({
 
   const query = search.trim().toLowerCase();
 
-  // Escape closes the topmost popup first, then the list modal.
-  useEffect(() => {
-    if (!openType && !embedTarget && !deleteTarget) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (deleteTarget) setDeleteTarget(null);
-      else if (embedTarget) setEmbedTarget(null);
-      else setOpenType(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [openType, embedTarget, deleteTarget]);
-
   const close = () => {
     setOpenType(null);
     setSearch('');
     setVisibleCount(ITEMS_PER_PAGE);
     setEmbedTarget(null);
-    setDeleteTarget(null);
   };
 
   const openModal = (type: WidgetTypeKey) => {
@@ -672,16 +590,16 @@ export function WidgetsHome({
       // Refresh server props so a remount (close/reopen the modal) doesn't
       // re-initialize the list from the stale pre-duplicate payload.
       router.refresh();
+      showToast(`“${item.name}” duplicated`, 'success');
     } catch (err) {
-      alert(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      showToast(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
       setBusy(false);
     }
   };
 
   // Performs the delete once the user confirms in the popup.
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const confirmDelete = async (deleteTarget: DeleteTarget) => {
     setBusy(true);
     try {
       const url =
@@ -697,13 +615,22 @@ export function WidgetsHome({
       } else {
         setGoogleReviewsItems((list) => list.filter((x) => x.id !== deleteTarget.id));
       }
-      setDeleteTarget(null);
       router.refresh();
+      showToast(`“${deleteTarget.name}” deleted`, 'success');
     } catch (err) {
-      alert(`Delete failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      showToast(`Delete failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
       setBusy(false);
     }
+  };
+
+  const requestDelete = (deleteTarget: DeleteTarget) => {
+    showConfirm(
+      'Delete this embed?',
+      `“${deleteTarget.name}” will be permanently deleted. This cannot be undone.`,
+      () => confirmDelete(deleteTarget),
+      { confirmText: 'Delete', cancelText: 'Cancel' }
+    );
   };
 
   const createBeforeAfter = async () => {
@@ -722,7 +649,7 @@ export function WidgetsHome({
       close();
       router.push(`/widgets/before-after?id=${row.id}`);
     } catch (err) {
-      alert(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      showToast(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
       setBusy(false);
     }
   };
@@ -733,7 +660,7 @@ export function WidgetsHome({
     // A widget needs a business — reuse the one from any existing widget.
     const source = googleReviewsItems[0] ?? carouselItems[0];
     if (!source) {
-      alert('No business found. Add a business in Supabase first.');
+      showToast('No business found. Add a business in Supabase first.', 'error');
       return;
     }
     setBusy(true);
@@ -755,7 +682,7 @@ export function WidgetsHome({
       close();
       router.push(`/widgets/${type}?id=${row.id}`);
     } catch (err) {
-      alert(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      showToast(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
       setBusy(false);
     }
   };
@@ -783,8 +710,9 @@ export function WidgetsHome({
       setList((list) => [{ ...item, id: row.id, name: row.name }, ...list]);
       // Refresh server props so a remount doesn't re-initialize from stale data.
       router.refresh();
+      showToast(`“${item.name}” duplicated`, 'success');
     } catch (err) {
-      alert(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      showToast(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
     } finally {
       setBusy(false);
     }
@@ -823,7 +751,9 @@ export function WidgetsHome({
         onDuplicate={() =>
           duplicateGoogleReviewsItem(item, isCarousel ? setCarouselItems : setGoogleReviewsItems)
         }
-        onDelete={() => setDeleteTarget({ type, id: item.id, name: item.name })}
+        onDelete={() =>
+          requestDelete({ type, id: item.id, name: item.name })
+        }
       >
         {isCarousel ? (
           <CarouselThumbnail item={item} />
@@ -853,7 +783,7 @@ export function WidgetsHome({
             setEmbedTarget({ id: item.id, name: item.name, typeLabel: widgetTypeMeta['before-after'].typeLabel })
           }
           onDuplicate={() => duplicateBeforeAfter(item)}
-          onDelete={() => setDeleteTarget({ type: 'before-after', id: item.id, name: item.name })}
+          onDelete={() => requestDelete({ type: 'before-after', id: item.id, name: item.name })}
         >
           <BeforeAfterWidget config={item.config} compact />
         </WidgetCard>
@@ -884,7 +814,7 @@ export function WidgetsHome({
       name: widgetTypeMeta['before-after'].name,
       description: widgetTypeMeta['before-after'].description,
       icon: (
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/30">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 ring-1 ring-blue-200">
           <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
@@ -899,7 +829,7 @@ export function WidgetsHome({
       name: widgetTypeMeta['google-reviews'].name,
       description: widgetTypeMeta['google-reviews'].description,
       icon: (
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-600/20 text-amber-500 ring-1 ring-amber-500/30">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 ring-1 ring-amber-200">
           <span className="text-lg font-bold">G</span>
         </span>
       ),
@@ -910,7 +840,7 @@ export function WidgetsHome({
       name: widgetTypeMeta['google-reviews-carousel'].name,
       description: widgetTypeMeta['google-reviews-carousel'].description,
       icon: (
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-600/20 text-amber-500 ring-1 ring-amber-500/30">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 ring-1 ring-amber-200">
           <span className="text-lg font-bold">G</span>
         </span>
       ),
@@ -926,112 +856,79 @@ export function WidgetsHome({
             key={card.key}
             type="button"
             onClick={() => openModal(card.key)}
-            className="group overflow-hidden rounded-xl bg-neutral-900 text-left ring-1 ring-neutral-800 transition-colors hover:ring-neutral-600"
+            className="group overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-left shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--color-accent)]"
           >
-            <div className="h-44 bg-neutral-800/60">{card.mock}</div>
+            <div className="h-44 bg-[var(--color-bg-secondary)]">{card.mock}</div>
             <div className="flex items-start gap-3 p-4">
               {card.icon}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold">{card.name}</h2>
-                  <span className="text-neutral-600 transition-transform group-hover:translate-x-1">
+                  <h2 className="text-base font-semibold text-[var(--color-text-primary)]">{card.name}</h2>
+                  <span className="text-[var(--color-text-muted)] transition-transform group-hover:translate-x-1">
                     →
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-neutral-500">{card.description}</p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{card.description}</p>
               </div>
             </div>
           </button>
         ))}
       </div>
 
-      {openType && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
-          onClick={close}
-        >
-          <div
-            className="flex max-h-[85vh] w-full max-w-[calc(100vw-6rem)] flex-col overflow-hidden rounded-2xl bg-neutral-950 ring-1 ring-neutral-800 sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20 text-blue-400">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
-                </span>
-                <div>
-                  <h2 className="text-lg font-bold">{widgetTypeMeta[openType].modalTitle}</h2>
-                  <p className="text-xs text-neutral-500">{openCount} embeds found</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={close}
-                className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-neutral-200"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Search + create */}
-            <div className="flex items-center gap-3 px-5 pb-4">
-              <div className="relative flex-1">
-                <svg
-                  className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-600"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
+      <Modal
+        open={!!openType}
+        onClose={close}
+        title={openType ? widgetTypeMeta[openType].modalTitle : undefined}
+        description={`${openCount} embeds found`}
+        size="xl"
+        showClose
+      >
+        {/* Search + create */}
+        <div className="mb-4 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search by name or ID..."
+              iconLeft={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <circle cx="11" cy="11" r="8" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  placeholder="Search by name or ID..."
-                  className="w-full rounded-lg bg-[#ffffff0a] py-2.5 pr-3 pl-9 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  openType === 'before-after' ? createBeforeAfter() : createGoogleReviews(openType)
-                }
-                disabled={busy}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Create New
-              </button>
-            </div>
-
-            {/* Grid */}
-            <div className="editor-scroll flex-1 overflow-y-auto p-5 pt-1">
-              {openCount === 0 ? (
-                <div className="py-16 text-center text-sm text-neutral-500">
-                  No embeds found.
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {renderModalBody()}
-                  {hasMore && <LoadMoreSentinel onLoadMore={loadMore} />}
-                </div>
-              )}
-            </div>
+              }
+            />
           </div>
+          <Button
+            type="button"
+            onClick={() => {
+              if (!openType) return;
+              if (openType === 'before-after') createBeforeAfter();
+              else createGoogleReviews(openType);
+            }}
+            disabled={busy}
+            iconLeft={
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            }
+          >
+            Create New
+          </Button>
         </div>
-      )}
+
+        {/* Grid */}
+        {openCount === 0 ? (
+          <div className="py-16 text-center text-sm text-[var(--color-text-secondary)]">
+            No embeds found.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {renderModalBody()}
+            {hasMore && <LoadMoreSentinel onLoadMore={loadMore} />}
+          </div>
+        )}
+      </Modal>
 
       {embedTarget && (
         <EmbedCodeModal
@@ -1039,15 +936,6 @@ export function WidgetsHome({
           name={embedTarget.name}
           typeLabel={embedTarget.typeLabel}
           onClose={() => setEmbedTarget(null)}
-        />
-      )}
-
-      {deleteTarget && (
-        <ConfirmDeleteModal
-          name={deleteTarget.name}
-          busy={busy}
-          onCancel={() => setDeleteTarget(null)}
-          onConfirm={confirmDelete}
         />
       )}
     </>
