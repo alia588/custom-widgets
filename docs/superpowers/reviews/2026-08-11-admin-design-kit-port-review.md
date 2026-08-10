@@ -322,3 +322,97 @@ The spec is directionally correct and the boundary intent is well understood, bu
 - **Low risk:** missing safe-to-touch file list; thin verification section.
 
 **Do not implement until the spec addresses at least the high-risk items above.**
+
+---
+
+## Code review (post-implementation)
+
+**Branch:** `feature/admin-design-kit`  
+**Base for diff:** `feat/testing-alerts-e2e`  
+**Files reviewed:** `src/app/layout.tsx`, `src/components/Sidebar.tsx`, `src/components/WidgetsHome.tsx`, `src/components/SettingsPage.tsx`, `src/components/editor/EditorShell.tsx`, `src/components/editor/controls.tsx`, `src/components/editor/WidgetEditor.tsx`, `src/components/editor/CarouselEditor.tsx`, `src/components/editor/BeforeAfterEditor.tsx`, `src/app/login/page.tsx`.
+
+Per-file diffs were gathered with `git diff feat/testing-alerts-e2e..HEAD -- <path>`.
+
+**Build / type-check / tests:**
+- `npm run build` passes.
+- `npx tsc --noEmit` passes.
+- `npm run test:unit` passes.
+
+### Findings
+
+#### 1. Critical (kit-side, but impacts reviewed callers): `showConfirm` auto-executes on SSR
+
+- **Location:** `src/components/ui/ConfirmDialog.tsx` is called from `WidgetsHome.tsx` and `SettingsPage.tsx`.
+- **Issue:** `showConfirm` contains:
+  ```ts
+  if (typeof window === 'undefined') {
+    onConfirm();
+    return;
+  }
+  ```
+  During any SSR/pre-render path, the destructive callback runs immediately without user confirmation.
+- **Impact:** Latent but severe. The current reviewed callers invoke `showConfirm` only inside client event handlers, so the fallback is not exercised today. If a future refactor calls it from a server action or server component, data will be deleted without confirmation.
+- **Recommendation:** Change the kit fallback to a no-op (or throw) rather than auto-confirming. Until then, audit that `showConfirm` is never imported into server code.
+
+#### 2. High: Delete/confirm flow lost the `busy` guard
+
+- **Locations:**
+  - `WidgetsHome.tsx`: `requestDelete` / `confirmDelete` / duplicate flows.
+  - `SettingsPage.tsx`: `requestDelete` / `doDelete`.
+- **Issue:** The original inline `ConfirmDeleteModal` received `busy={busy}` and disabled its Cancel/Delete buttons while the async operation was in flight. The new imperative `showConfirm` / `ConfirmDialog` has no `busy`/`isLoading` prop and is not wired to the component's `busy` state.
+- **Impact:** Rapid double-clicking **Confirm** can fire multiple delete/duplicate fetches. For deletes the second fetch 404s and shows an error toast; for duplicates it may create a second copy.
+- **Category:** This is a regression in **lost state/handlers vs base**.
+- **Recommendation:** Extend `showConfirm`/`ConfirmDialog` to accept an `isLoading` flag, or track a local `pendingDeleteId` / `pendingAction` state and suppress additional clicks until the promise settles.
+
+#### 3. Medium: Manual `<head>` injection in App Router layout
+
+- **Location:** `src/app/layout.tsx`.
+- **Issue:** The diff adds:
+  ```tsx
+  <head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  ```
+  inside an App Router `RootLayout`. Next.js 16 App Router manages `<head>` automatically; the canonical path is `next/font/google`. A manually rendered `<head>` can cause hydration warnings, duplicate head elements, and bypasses Next.js font optimization/self-hosting.
+- **Impact:** Build passes, but runtime may produce hydration mismatches or layout shift.
+- **Recommendation:** Load Inter via `next/font/google` in `layout.tsx` and remove the manual `<head>` block.
+
+#### 4. Low: Lost Escape-key stacking handler
+
+- **Location:** `WidgetsHome.tsx`.
+- **Issue:** The base code had a single `useEffect` Escape listener that closed the topmost popup in order: `deleteTarget` → `embedTarget` → `openType`. The diff removes this effect and relies on each `Modal` to handle Escape independently.
+- **Impact:** In the current UI only one modal is open at a time, so behavior is equivalent. If stacked modals are introduced later, Escape will be handled by all listeners instead of the topmost one, and `document.body.style.overflow` toggles may fight.
+- **Category:** Minor **lost state/handlers vs base** regression.
+- **Recommendation:** Acceptable for the current scope; reintroduce a single Escape manager if modals ever stack.
+
+#### 5. Low/Nit: `EditorShell` active tab uses a hardcoded dark palette
+
+- **Location:** `src/components/editor/EditorShell.tsx`.
+- **Issue:** The active tab button uses inline `bg-[#1d1d1f] text-white`. The rest of the admin is light-themed, so the rail active state is a dark patch. The kit's `.ui-nav-item[data-active="true"]` also hardcodes the same colors, but `EditorShell` does not use `.ui-nav-item` and duplicates the value.
+- **Impact:** Visual inconsistency only; not functional.
+- **Recommendation:** If the dark active rail is intentional, document it in the design kit migration notes; otherwise map it to a light-kit token.
+
+### Prop-contract verification
+
+- `controls.tsx` keeps all exported names and signatures (`Section`, `Card`, `Field`, `Select`, `TextInput`, `NumberInput`, `Toggle`, `Slider`, `ColorField`).
+- `controls.contract.test.ts` passes for all primitives.
+- `Toggle` correctly maps to `KitSwitch` via `onCheckedChange`.
+- `ColorField` preserves hex casing.
+- `NumberInput` still emits `Number(e.target.value)` (note: empty input becomes `0`, same as base).
+- `Select` still emits string values.
+- No broken prop contracts were found in the reviewed files.
+
+### Fetch/save-flow verification
+
+- `WidgetEditor.tsx`, `CarouselEditor.tsx`, and `BeforeAfterEditor.tsx` preserve their original `save()` implementations and pass the same props to preview mounts.
+- `SettingsPage.tsx` preserves fetch URLs, HTTP methods, and state updates.
+- `WidgetsHome.tsx` preserves duplicate/delete fetch URLs and `router.refresh()` calls; only the confirmation UI changed.
+- No fetch/save regressions were detected beyond the confirm `busy` guard issue noted above.
+
+### Null-safety notes
+
+- `EditorShell` defensively falls back to `{ title: '', subtitle: '' }` when `tabMeta[activeTab]` is missing.
+- `Controls.tsx` wrappers do not add null-safety beyond the original implementations; callers are still expected to provide values.
+- `showConfirm` and `showToast` are safe to call from client event handlers in the reviewed files.
+
+(End of code review)
