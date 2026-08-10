@@ -13,7 +13,7 @@ function MiniStars({ rating }: { rating: number }) {
           height="12"
           viewBox="0 0 24 24"
           fill={i < rating ? '#FACC15' : 'none'}
-          stroke={i < rating ? '#FACC15' : '#52525B'}
+          stroke={i < rating ? '#FACC15' : '#d1d1d6'}
           strokeWidth="2"
         >
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -67,11 +67,11 @@ export function ExcludeReviewsPicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 transition-colors hover:bg-[#ffffff14]"
+        className="ui-control flex w-full items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-hover)]"
       >
         {shownCount} of {eligible.length} reviews shown
         <svg
-          className={`h-4 w-4 text-neutral-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-[var(--color-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -84,7 +84,7 @@ export function ExcludeReviewsPicker({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl bg-black shadow-2xl">
+          <div className="absolute right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-lg">
             <div className="p-3">
               <input
                 type="text"
@@ -92,36 +92,36 @@ export function ExcludeReviewsPicker({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by author name..."
                 autoFocus
-                className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)] focus:border-[var(--color-accent)] focus:shadow-[var(--shadow-glow)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
 
             <div className="editor-scroll max-h-72 overflow-y-auto p-1.5">
               {visible.length === 0 && (
-                <div className="p-4 text-center text-sm text-neutral-500">No reviews match.</div>
+                <div className="p-4 text-center text-sm text-[var(--color-text-secondary)]">No reviews match.</div>
               )}
               {visible.map((r) => {
                 const included = !excludedIds.includes(r.id);
                 return (
                   <label
                     key={r.id}
-                    className="flex cursor-pointer gap-3 rounded-lg p-3 transition-colors hover:bg-neutral-800"
+                    className="flex cursor-pointer gap-3 rounded-lg p-3 transition-colors hover:bg-[var(--color-bg-hover)]"
                   >
                     <input
                       type="checkbox"
                       checked={included}
                       onChange={() => toggle(r.id)}
-                      className="mt-0.5 h-4 w-4 flex-shrink-0 accent-white"
+                      className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[var(--color-accent)]"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span className="text-sm font-semibold text-neutral-100">
+                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                           {r.authorName}
                         </span>
                         <MiniStars rating={r.rating} />
-                        <span className="text-xs text-neutral-500">{r.relativeTime}</span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">{r.relativeTime}</span>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-neutral-400">
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
                         {r.text}
                       </p>
                     </div>

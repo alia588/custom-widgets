@@ -21,8 +21,10 @@ export function ConfirmDialog() {
       setDialog(event.detail);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.addEventListener('show-confirm' as any, handleConfirm as EventListener);
     return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       window.removeEventListener('show-confirm' as any, handleConfirm as EventListener);
     };
   }, []);

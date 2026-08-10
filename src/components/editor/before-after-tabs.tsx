@@ -60,12 +60,12 @@ function ImageField({
 
   return (
     <Field label={label}>
-      <div className="mb-2 flex h-28 items-center justify-center overflow-hidden rounded-lg bg-[#ffffff0a]">
+      <div className="mb-2 flex h-28 items-center justify-center overflow-hidden rounded-lg bg-[var(--color-bg-secondary)]">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-xs text-neutral-600">No image set</span>
+          <span className="text-xs text-[var(--color-text-muted)]">No image set</span>
         )}
       </div>
       <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ function ImageField({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-200 transition-colors hover:bg-[#ffffff14] disabled:opacity-50"
+          className="ui-control flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-hover)] disabled:opacity-50"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />

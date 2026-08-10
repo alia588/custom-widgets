@@ -1,11 +1,11 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleReviewsWidget } from '@/components/GoogleReviewsWidget';
+import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './tabs';
 
 export interface EditorWidget {
@@ -18,7 +18,7 @@ export interface EditorWidget {
 
 type EditorTab = 'content' | 'style' | 'layout' | 'settings';
 
-const tabs: { id: EditorTab; label: string; icon: ReactNode }[] = [
+const tabs: EditorTabDef[] = [
   {
     id: 'content',
     label: 'Content',
@@ -49,13 +49,13 @@ const tabs: { id: EditorTab; label: string; icon: ReactNode }[] = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
       </svg>
     ),
   },
 ];
 
-const tabMeta: Record<EditorTab, { title: string; subtitle: string }> = {
+const tabMeta: Record<EditorTab, EditorTabMeta> = {
   content: { title: 'Content', subtitle: 'Configure your content and basic settings' },
   style: { title: 'Style', subtitle: 'Customize colors, themes, and visual appearance' },
   layout: { title: 'Layout', subtitle: 'Adjust spacing, sizing, and layout options' },
@@ -85,7 +85,7 @@ export function WidgetEditor({
 
   if (!selected) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-neutral-400">
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
         No Google Reviews Badge widgets found. Add a business in Supabase first.
       </div>
     );
@@ -134,76 +134,18 @@ export function WidgetEditor({
   };
 
   return (
-    <div className="flex h-screen flex-col bg-black text-neutral-100">
-      {/* Header */}
-      <div className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-neutral-900 px-4">
-        <Link
-          href="/"
-          title="Back to Widgets"
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-900 text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <h1 className="text-lg font-bold">Edit Google Reviews Badge</h1>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-      {/* Icon rail */}
-      <div className="flex w-[72px] flex-shrink-0 flex-col gap-1 bg-white/[0.03] px-2 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),inset_0_-1px_0_0_rgba(0,0,0,0.3),inset_0_2px_4px_0_rgba(0,0,0,0.2)]">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px] transition-colors ${
-              activeTab === t.id
-                ? 'bg-neutral-800 text-white'
-                : 'text-neutral-500 hover:bg-neutral-900 hover:text-neutral-300'
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Settings panel */}
-      <div className="flex w-[420px] flex-shrink-0 flex-col bg-white/[0.01]">
-        <div className="p-5">
-          <h2 className="text-lg font-bold">{tabMeta[activeTab].title}</h2>
-          <p className="mt-0.5 text-sm text-neutral-500">{tabMeta[activeTab].subtitle}</p>
-        </div>
-
-        <div className="editor-scroll flex-1 overflow-y-auto p-5">
-          <div key={activeTab} className="editor-tab-enter">
-            {activeTab === 'content' && <ContentTab {...tabProps} />}
-            {activeTab === 'style' && <StyleTab {...tabProps} />}
-            {activeTab === 'layout' && <LayoutTab {...tabProps} />}
-            {activeTab === 'settings' && <SettingsTab {...tabProps} />}
-          </div>
-        </div>
-
-        <div className="p-4 pb-7">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2 text-sm font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-50"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <path d="M17 21v-8H7v8M7 3v5h8" />
-            </svg>
-            {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-
-      {/* Live preview */}
-      <div className="relative flex-1 overflow-hidden bg-neutral-950">
-        <div className="absolute top-4 left-5 text-sm text-neutral-500">
-          {selected.widgetName} <span className="text-neutral-700">· live preview</span>
-        </div>
+    <EditorShell
+      title="Edit Google Reviews Badge"
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as EditorTab)}
+      tabMeta={tabMeta}
+      saveLabel="Save Changes"
+      saving={saving}
+      saved={saved}
+      onSave={save}
+      previewLabel={selected.widgetName}
+      preview={
         <div className="flex h-full items-center justify-center p-10">
           <GoogleReviewsWidget
             key={selectedId}
@@ -214,8 +156,12 @@ export function WidgetEditor({
             preview={config.position !== 'inline'}
           />
         </div>
-      </div>
-      </div>
-    </div>
+      }
+    >
+      {activeTab === 'content' && <ContentTab {...tabProps} />}
+      {activeTab === 'style' && <StyleTab {...tabProps} />}
+      {activeTab === 'layout' && <LayoutTab {...tabProps} />}
+      {activeTab === 'settings' && <SettingsTab {...tabProps} />}
+    </EditorShell>
   );
 }
