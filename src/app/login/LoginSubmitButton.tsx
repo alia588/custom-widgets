@@ -1,22 +1,20 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
+import { Button } from '@/components/ui';
 
 export function LoginSubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-60"
-    >
+    <Button type="submit" fullWidth size="lg" disabled={pending}>
       {pending && (
         <svg
           className="h-4 w-4 animate-spin"
           fill="none"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
         >
           <circle
             className="opacity-25"
@@ -34,6 +32,6 @@ export function LoginSubmitButton() {
         </svg>
       )}
       {pending ? 'Signing in...' : 'Sign in'}
-    </button>
+    </Button>
   );
 }

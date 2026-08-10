@@ -13,12 +13,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col border-r border-neutral-800 bg-neutral-950">
-      <div className="flex h-16 items-center justify-center border-b border-neutral-800">
-        <span className="text-lg font-bold text-neutral-100">B</span>
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-16 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-sidebar)]">
+      <div className="flex h-16 items-center justify-center border-b border-[var(--color-border)]">
+        <span className="text-lg font-bold text-[var(--color-text-primary)]">B</span>
       </div>
 
-      <nav className="flex flex-1 flex-col items-center gap-2 py-4">
+      <nav className="flex flex-1 flex-col gap-1 px-2 py-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
@@ -27,14 +27,11 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-neutral-900 text-neutral-100'
-                  : 'text-neutral-400 hover:bg-neutral-900/50 hover:text-neutral-200'
-              }`}
+              data-active={isActive ? 'true' : undefined}
+              className="ui-control ui-nav-item group relative justify-center"
             >
               <Icon className="h-5 w-5" />
-              <span className="absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-neutral-800 px-2 py-1 text-xs text-neutral-200 group-hover:block">
+              <span className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-xs text-[var(--color-text-primary)] shadow-[var(--shadow-md)] group-hover:block">
                 {item.label}
               </span>
             </Link>
@@ -42,15 +39,15 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-neutral-800 p-2">
+      <div className="border-t border-[var(--color-border)] p-2">
         <form action={logout}>
           <button
             type="submit"
             title="Sign out"
-            className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-900/50 hover:text-neutral-200"
+            className="ui-control ui-nav-item group relative justify-center"
           >
             <LogoutIcon className="h-5 w-5" />
-            <span className="absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-neutral-800 px-2 py-1 text-xs text-neutral-200 group-hover:block">
+            <span className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md border border-[var(--color-border)] bg-white px-2 py-1 text-xs text-[var(--color-text-primary)] shadow-[var(--shadow-md)] group-hover:block">
               Sign out
             </span>
           </button>
