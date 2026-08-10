@@ -416,31 +416,31 @@ function WidgetCard({
 // ---------------------------------------------------------------------------
 
 function MockBar({ className }: { className: string }) {
-  return <div className={`rounded-full bg-neutral-600/70 ${className}`} />;
+  return <div className={`rounded-full bg-[var(--color-border)] ${className}`} />;
 }
 
 function BeforeAfterMock() {
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <div className="absolute inset-y-0 left-0 w-1/2 bg-neutral-700/60" />
-      <div className="absolute inset-y-0 right-0 w-1/2 bg-neutral-600/40" />
-      <div className="absolute inset-y-0 left-1/2 w-0.5 bg-neutral-300/80" />
-      <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-neutral-800 ring-1 ring-neutral-500">
-        <svg className="h-4 w-4 text-neutral-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <div className="absolute inset-y-0 left-0 w-1/2 bg-[var(--color-bg-hover)]" />
+      <div className="absolute inset-y-0 right-0 w-1/2 bg-[var(--color-border-light)]" />
+      <div className="absolute inset-y-0 left-1/2 w-0.5 bg-[var(--color-text-muted)]" />
+      <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)]">
+        <svg className="h-4 w-4 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" />
         </svg>
       </div>
-      <div className="absolute top-3 left-3 h-4 w-12 rounded-full bg-neutral-500/70" />
-      <div className="absolute top-3 right-3 h-4 w-12 rounded-full bg-neutral-500/70" />
+      <div className="absolute top-3 left-3 h-4 w-12 rounded-full bg-[var(--color-bg-hover)]" />
+      <div className="absolute top-3 right-3 h-4 w-12 rounded-full bg-[var(--color-bg-hover)]" />
     </div>
   );
 }
 
 function MiniReviewCard() {
   return (
-    <div className="w-16 flex-shrink-0 rounded-md bg-neutral-700/50 p-1.5">
+    <div className="w-16 flex-shrink-0 rounded-md bg-white p-1.5 shadow-sm ring-1 ring-[var(--color-border)]">
       <div className="mb-1 flex items-center gap-1">
-        <div className="h-2.5 w-2.5 rounded-full bg-neutral-500" />
+        <div className="h-2.5 w-2.5 rounded-full bg-[var(--color-bg-hover)]" />
         <MockBar className="h-1 w-7" />
       </div>
       <div className="mb-1 flex gap-px">
@@ -451,7 +451,7 @@ function MiniReviewCard() {
       <MockBar className="mb-0.5 h-1 w-full" />
       <MockBar className="mb-0.5 h-1 w-full" />
       <MockBar className="h-1 w-2/3" />
-      <div className="mt-1 text-[6px] font-bold text-neutral-400">G</div>
+      <div className="mt-1 text-[6px] font-bold text-[var(--color-text-muted)]">G</div>
     </div>
   );
 }
@@ -465,7 +465,7 @@ function GoogleReviewsMock() {
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         ))}
-        <span className="text-xs font-semibold text-neutral-500">4.9</span>
+        <span className="text-xs font-semibold text-[var(--color-text-secondary)]">4.9</span>
       </div>
       <div className="flex gap-2">
         <MiniReviewCard />
@@ -486,8 +486,8 @@ function CarouselMock() {
         <MiniReviewCard />
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 ring-1 ring-neutral-600">
-          <svg className="h-2 w-2 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)]">
+          <svg className="h-2 w-2 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </div>
@@ -495,12 +495,12 @@ function CarouselMock() {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-blue-400' : 'bg-neutral-600'}`}
+              className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`}
             />
           ))}
         </div>
-        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700 ring-1 ring-neutral-600">
-          <svg className="h-2 w-2 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)]">
+          <svg className="h-2 w-2 text-[var(--color-text-secondary)]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
             <path d="M9 18l6-6-6-6" />
           </svg>
         </div>
