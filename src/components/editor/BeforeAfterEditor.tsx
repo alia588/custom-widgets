@@ -1,10 +1,10 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { beforeAfterToDbRow } from '@/lib/before-after-config';
 import { BeforeAfterWidget } from '@/components/BeforeAfterWidget';
+import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './before-after-tabs';
 
 export interface BeforeAfterEditorWidget {
@@ -15,7 +15,7 @@ export interface BeforeAfterEditorWidget {
 
 type EditorTab = 'content' | 'style' | 'layout' | 'settings';
 
-const tabs: { id: EditorTab; label: string; icon: ReactNode }[] = [
+const tabs: EditorTabDef[] = [
   {
     id: 'content',
     label: 'Content',
@@ -52,7 +52,7 @@ const tabs: { id: EditorTab; label: string; icon: ReactNode }[] = [
   },
 ];
 
-const tabMeta: Record<EditorTab, { title: string; subtitle: string }> = {
+const tabMeta: Record<EditorTab, EditorTabMeta> = {
   content: { title: 'Content', subtitle: 'Configure your content and basic settings' },
   style: { title: 'Style', subtitle: 'Customize colors, themes, and visual appearance' },
   layout: { title: 'Layout', subtitle: 'Adjust spacing, sizing, and layout options' },
@@ -85,7 +85,7 @@ export function BeforeAfterEditor({
 
   if (!selected) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-neutral-400">
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
         No Before/After Slider widgets found. Add a row to before_after_widgets in Supabase first.
       </div>
     );
@@ -127,79 +127,19 @@ export function BeforeAfterEditor({
   };
 
   return (
-    <div className="flex h-screen flex-col bg-black text-neutral-100">
-      {/* Header */}
-      <div className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-neutral-900 px-4">
-        <Link
-          href="/"
-          title="Back to Widgets"
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-900 text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
-        <h1 className="text-lg font-bold">Edit Before/After Slider</h1>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-      {/* Icon rail */}
-      <div className="flex w-[72px] flex-shrink-0 flex-col gap-1 bg-white/[0.03] px-2 py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04),inset_0_-1px_0_0_rgba(0,0,0,0.3),inset_0_2px_4px_0_rgba(0,0,0,0.2)]">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px] transition-colors ${
-              activeTab === t.id
-                ? 'bg-neutral-800 text-white'
-                : 'text-neutral-500 hover:bg-neutral-900 hover:text-neutral-300'
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Settings panel */}
-      <div className="flex w-[420px] flex-shrink-0 flex-col bg-white/[0.01]">
-        <div className="p-5">
-          <h2 className="text-lg font-bold">{tabMeta[activeTab].title}</h2>
-          <p className="mt-0.5 text-sm text-neutral-500">{tabMeta[activeTab].subtitle}</p>
-        </div>
-
-        <div className="editor-scroll flex-1 overflow-y-auto p-5">
-          <div key={activeTab} className="editor-tab-enter">
-            {activeTab === 'content' && <ContentTab {...tabProps} />}
-            {activeTab === 'style' && <StyleTab {...tabProps} />}
-            {activeTab === 'layout' && <LayoutTab {...tabProps} />}
-            {activeTab === 'settings' && <SettingsTab {...tabProps} />}
-          </div>
-        </div>
-
-        <div className="p-4 pb-7">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2 text-sm font-semibold text-black transition-colors hover:bg-neutral-200 disabled:opacity-50"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <path d="M17 21v-8H7v8M7 3v5h8" />
-            </svg>
-            {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Update Embed'}
-          </button>
-          <p className="mt-2 text-center text-xs text-neutral-600">
-            Upload custom images or use the defaults to update your embed
-          </p>
-        </div>
-      </div>
-
-      {/* Live preview */}
-      <div className="relative flex-1 overflow-hidden bg-neutral-950">
-        <div className="absolute top-4 left-5 text-sm text-neutral-500">
-          {widgetName} <span className="text-neutral-700">· live preview</span>
-        </div>
+    <EditorShell
+      title="Edit Before/After Slider"
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as EditorTab)}
+      tabMeta={tabMeta}
+      saveLabel="Update Embed"
+      saving={saving}
+      saved={saved}
+      onSave={save}
+      saveHint="Upload custom images or use the defaults to update your embed"
+      previewLabel={widgetName}
+      preview={
         <div className="flex h-full items-center justify-center p-10">
           <div className="w-full max-w-3xl">
             {/* Keyed by sliderPosition so the editor's Slider Position
@@ -207,8 +147,12 @@ export function BeforeAfterEditor({
             <BeforeAfterWidget key={`${selectedId}-${config.sliderPosition}`} config={config} />
           </div>
         </div>
-      </div>
-      </div>
-    </div>
+      }
+    >
+      {activeTab === 'content' && <ContentTab {...tabProps} />}
+      {activeTab === 'style' && <StyleTab {...tabProps} />}
+      {activeTab === 'layout' && <LayoutTab {...tabProps} />}
+      {activeTab === 'settings' && <SettingsTab {...tabProps} />}
+    </EditorShell>
   );
 }

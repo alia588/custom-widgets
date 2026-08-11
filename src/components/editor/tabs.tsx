@@ -62,14 +62,14 @@ export function ContentTab({
         <Card>
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-900/50 text-emerald-400">
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M5 13l4 4L19 7" />
                 </svg>
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-semibold break-words text-neutral-100">{businessName ?? 'Business'}</div>
-                <div className="truncate text-xs text-neutral-500">{businessAddress ?? ''}</div>
+                <div className="text-sm font-semibold break-words text-[var(--color-text-primary)]">{businessName ?? 'Business'}</div>
+                <div className="truncate text-xs text-[var(--color-text-secondary)]">{businessAddress ?? ''}</div>
               </div>
             </div>
             <button
@@ -78,7 +78,7 @@ export function ContentTab({
                 setPickerOpen((o) => !o);
                 setPickerQuery('');
               }}
-              className="flex-shrink-0 self-start text-sm text-neutral-400 hover:text-neutral-200"
+              className="flex-shrink-0 self-start text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             >
               Change
             </button>
@@ -87,7 +87,7 @@ export function ContentTab({
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setPickerOpen(false)} />
                 <div
-                  className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl bg-black shadow-2xl"
+                  className="absolute top-full right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-lg"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="p-2.5">
@@ -97,12 +97,12 @@ export function ContentTab({
                       onChange={(e) => setPickerQuery(e.target.value)}
                       placeholder="Search businesses..."
                       autoFocus
-                      className="w-full rounded-lg bg-[#ffffff0a] px-3 py-2 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
+                      className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)] focus:border-[var(--color-accent)] focus:shadow-[var(--shadow-glow)] placeholder:text-[var(--color-text-muted)]"
                     />
                   </div>
                   <div className="editor-scroll max-h-64 overflow-y-auto p-1.5">
                     {filteredBusinesses.length === 0 && (
-                      <div className="p-4 text-center text-sm text-neutral-500">
+                      <div className="p-4 text-center text-sm text-[var(--color-text-secondary)]">
                         {businesses.length === 0
                           ? 'No businesses found in Supabase.'
                           : 'No businesses match your search.'}
@@ -116,15 +116,15 @@ export function ContentTab({
                           onSelectBusiness?.(b.id);
                           setPickerOpen(false);
                         }}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-neutral-800 ${b.id === selectedBusinessId ? 'bg-neutral-800' : ''
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-[var(--color-bg-hover)] ${b.id === selectedBusinessId ? 'bg-[var(--color-bg-hover)]' : ''
                           }`}
                       >
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-neutral-100">{b.name}</div>
-                          <div className="truncate text-xs text-neutral-500">{b.address}</div>
+                          <div className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{b.name}</div>
+                          <div className="truncate text-xs text-[var(--color-text-secondary)]">{b.address}</div>
                         </div>
                         {b.id === selectedBusinessId && (
-                          <svg className="h-4 w-4 flex-shrink-0 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <svg className="h-4 w-4 flex-shrink-0 text-[var(--color-accent)]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path d="M5 13l4 4L19 7" />
                           </svg>
                         )}

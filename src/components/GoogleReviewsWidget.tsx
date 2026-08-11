@@ -229,6 +229,8 @@ export function GoogleReviewsWidget({
       <div
         style={styles.wrapper}
         className="custom-widget-badge-wrapper"
+        data-bbs-widget="reviews"
+        data-bbs-widget-id={widgetId || undefined}
       >
         <div
           style={{

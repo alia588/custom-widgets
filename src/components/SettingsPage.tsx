@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Button, Card, CardDescription, CardHeader, CardTitle, Input } from '@/components/ui';
+import { showConfirm } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/Toast';
 
 interface AllowedDomain {
   id: string;
@@ -18,12 +21,11 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
-  };
+  // Re-entrancy guard: the kit ConfirmDialog closes imperatively, so its
+  // Confirm button can be clicked twice before React re-renders — `loading`
+  // state closures would be stale. A ref reliably stops a second DELETE.
+  const actionInFlightRef = useRef(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +41,15 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showMessage('error', data.error || 'Failed to add domain');
+        showToast(data.error || 'Failed to add domain', 'error');
         return;
       }
 
       setDomains((prev) => [...prev, data]);
       setInput('');
-      showMessage('success', 'Domain added');
+      showToast('Domain added', 'success');
     } catch {
-      showMessage('error', 'Failed to add domain');
+      showToast('Failed to add domain', 'error');
     } finally {
       setLoading(false);
     }
@@ -76,24 +78,24 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showMessage('error', data.error || 'Failed to update domain');
+        showToast(data.error || 'Failed to update domain', 'error');
         return;
       }
 
       setDomains((prev) => prev.map((d) => (d.id === id ? data : d)));
       setEditingId(null);
       setEditValue('');
-      showMessage('success', 'Domain updated');
+      showToast('Domain updated', 'success');
     } catch {
-      showMessage('error', 'Failed to update domain');
+      showToast('Failed to update domain', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this domain?')) return;
-
+  const doDelete = async (id: string) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/allowed-domains/${id}`, {
@@ -102,65 +104,63 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        showMessage('error', data.error || 'Failed to delete domain');
+        showToast(data.error || 'Failed to delete domain', 'error');
         return;
       }
 
       setDomains((prev) => prev.filter((d) => d.id !== id));
-      showMessage('success', 'Domain deleted');
+      showToast('Domain deleted', 'success');
     } catch {
-      showMessage('error', 'Failed to delete domain');
+      showToast('Failed to delete domain', 'error');
     } finally {
+      actionInFlightRef.current = false;
       setLoading(false);
     }
   };
 
+  const requestDelete = (domain: AllowedDomain) => {
+    showConfirm(
+      'Remove this domain?',
+      `“${domain.domain}” will no longer be allowed to load widget embeds.`,
+      () => doDelete(domain.id),
+      { confirmText: 'Remove', cancelText: 'Cancel' }
+    );
+  };
+
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-bold">Settings</h1>
-      <p className="mt-1 mb-8 text-neutral-500">
+      <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Settings</h1>
+      <p className="mt-1 mb-8 text-[var(--color-text-secondary)]">
         Manage the domains that are allowed to load widget embeds.
       </p>
 
-      <div className="rounded-2xl bg-neutral-900 p-6 ring-1 ring-neutral-800">
-        <h2 className="mb-4 text-lg font-semibold">Allowed Domains</h2>
-
-        {message && (
-          <div
-            className={`mb-4 rounded-lg px-4 py-2.5 text-sm ${
-              message.type === 'success'
-                ? 'bg-green-500/10 text-green-400 ring-1 ring-green-500/20'
-                : 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Allowed Domains</CardTitle>
+          <CardDescription>
+            When empty, all embed requests are blocked. Add each domain you want to allow.
+          </CardDescription>
+        </CardHeader>
 
         <form onSubmit={handleAdd} className="mb-6 flex items-center gap-3">
-          <input
+          <Input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="e.g. example.com"
             disabled={loading}
-            className="flex-1 rounded-lg bg-[#ffffff0a] px-3 py-2.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-600"
           />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading || !input.trim()}>
             Save
-          </button>
+          </Button>
         </form>
 
         {domains.length === 0 ? (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-[var(--color-text-secondary)]">
             No domains allowed yet. When empty, all embed requests are blocked.
           </p>
         ) : (
-          <ul className="divide-y divide-neutral-800">
+          <ul className="divide-y divide-[var(--color-border-light)]">
             {domains.map((domain) => (
               <li
                 key={domain.id}
@@ -168,46 +168,42 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
               >
                 {editingId === domain.id ? (
                   <>
-                    <input
+                    <Input
                       type="text"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       disabled={loading}
-                      className="flex-1 rounded-lg bg-[#ffffff0a] px-3 py-2 text-sm text-neutral-100 outline-none"
                     />
-                    <div className="flex items-center gap-2">
-                      <button
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <Button
+                        size="sm"
                         onClick={() => handleUpdate(domain.id)}
                         disabled={loading || !editValue.trim()}
-                        className="rounded-lg bg-green-600/20 px-3 py-1.5 text-xs font-semibold text-green-400 transition-colors hover:bg-green-600/30 disabled:opacity-50"
                       >
                         Save
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        disabled={loading}
-                        className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-400 transition-colors hover:bg-neutral-700"
-                      >
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={cancelEdit} disabled={loading}>
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </>
                 ) : (
                   <>
-                    <span className="flex-1 text-sm text-neutral-200">{domain.domain}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => startEdit(domain)}
-                        className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-semibold text-neutral-400 transition-colors hover:bg-neutral-700"
-                      >
+                    <span className="flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
+                      {domain.domain}
+                    </span>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => startEdit(domain)}>
                         Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(domain.id)}
-                        className="rounded-lg bg-red-600/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-600/20"
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
+                        onClick={() => requestDelete(domain)}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </>
                 )}
@@ -215,7 +211,7 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

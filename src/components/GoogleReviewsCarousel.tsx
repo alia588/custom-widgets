@@ -303,6 +303,7 @@ export function GoogleReviewsCarousel({
 
   return (
     <div
+      data-bbs-widget="carousel"
       style={{
         ...widthStyle,
         ...(config.carouselMaxWidthEnabled
@@ -462,6 +463,7 @@ export function GoogleReviewsCarousel({
               <button
                 key={i}
                 type="button"
+                className="ui-control"
                 onClick={() => setPage(i)}
                 aria-label={`Go to slide ${i + 1}`}
                 style={{

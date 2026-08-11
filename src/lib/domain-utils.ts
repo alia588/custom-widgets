@@ -74,6 +74,14 @@ export function isOriginAllowed(origin: string | null, allowedDomains: string[])
   // and example.com match an entry stored as example.com.
   const normalizedHostname = hostname.replace(/^www\./, '').toLowerCase();
 
+  // Local Playwright / dev harness only — never enable in production deploys.
+  if (
+    process.env.ALLOW_LOCALHOST_EMBEDS === 'true' &&
+    (normalizedHostname === 'localhost' || normalizedHostname === '127.0.0.1')
+  ) {
+    return true;
+  }
+
   return allowedDomains.some((domain) => {
     const normalizedDomain = domain.trim().toLowerCase();
     if (!normalizedDomain) return false;
