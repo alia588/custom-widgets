@@ -185,10 +185,9 @@
 }
 
 * {
-  margin: 0;
   box-sizing: border-box;
-  /* Do NOT zero padding here — unlayered * { padding:0 } beats Tailwind
-     @layer utilities and collapses every px-/p- class in the app. */
+  /* Keep spacing resets in Tailwind's base layer. Unlayered margin/padding
+     resets win over @layer utilities and collapse every m-/p- class. */
 }
 
 html {
@@ -411,8 +410,13 @@ a.ui-control,
 }
 
 .ui-nav-item[data-active="true"] {
-  background: #1d1d1f;
-  color: #fff;
+  background: var(--color-accent-light);
+  color: var(--color-accent-dark);
+}
+
+.editor-nav-item[data-active="true"] {
+  background: var(--color-accent-light);
+  color: var(--color-accent-dark);
 }
 
 /* Prevent horizontal scrolling on mobile */

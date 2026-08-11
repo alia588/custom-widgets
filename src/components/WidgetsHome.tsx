@@ -351,12 +351,12 @@ function WidgetCard({
         <div className="pointer-events-none h-44 overflow-hidden rounded-lg bg-[var(--color-bg-secondary)]">
           {children}
         </div>
-        <div className="absolute top-3 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute top-3 right-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             type="button"
             onClick={onDuplicate}
             title="Duplicate"
-            className="rounded-md bg-white/80 p-1.5 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-white hover:text-[var(--color-text-primary)]"
+            className="ui-control flex h-7 w-7 items-center justify-center rounded-md bg-white/80 p-0 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-white hover:text-[var(--color-text-primary)]"
           >
             <DuplicateIcon />
           </button>
@@ -364,7 +364,7 @@ function WidgetCard({
             type="button"
             onClick={onDelete}
             title="Delete"
-            className="rounded-md bg-white/80 p-1.5 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-danger)] hover:text-white"
+            className="ui-control flex h-7 w-7 items-center justify-center rounded-md bg-white/80 p-0 text-[var(--color-text-secondary)] shadow-sm ring-1 ring-[var(--color-border)] transition-colors hover:bg-[var(--color-danger)] hover:text-white"
           >
             <TrashIcon />
           </button>

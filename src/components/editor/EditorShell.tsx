@@ -79,10 +79,11 @@ export function EditorShell({
               key={t.id}
               type="button"
               onClick={() => onTabChange(t.id)}
+              data-active={activeTab === t.id ? 'true' : undefined}
               className={cn(
-                'ui-control flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px] transition-colors',
+                'editor-nav-item ui-control flex flex-col items-center gap-1 rounded-lg px-1 py-3 text-[11px] transition-colors',
                 activeTab === t.id
-                  ? 'bg-[#1d1d1f] text-white'
+                  ? ''
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
               )}
             >
