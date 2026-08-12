@@ -8,19 +8,34 @@ export async function GET(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const type = new URL(request.url).searchParams.get('type');
+  const params = new URL(request.url).searchParams;
+  const type = params.get('type');
+  const page = Math.max(0, Number(params.get('page') ?? 0) || 0);
+  const pageSize = Math.min(30, Math.max(1, Number(params.get('pageSize') ?? 9) || 9));
+  const search = params.get('search')?.trim() ?? '';
+  const safeSearch = search.replace(/[%,()]/g, '');
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(search);
+  const searchFilter = isUuid
+    ? `name.ilike.%${safeSearch}%,id.eq.${search}`
+    : `name.ilike.%${safeSearch}%`;
+  const from = page * pageSize;
+  const to = from + pageSize;
   if (type === 'before-after') {
-    const { data, error } = await supabase
+    let query = supabase
       .from('before_after_widgets')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (safeSearch) query = query.or(searchFilter);
+    const { data, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({
-      items: (data ?? []).map((row) => ({
+      items: (data ?? []).slice(0, pageSize).map((row) => ({
         id: row.id,
         name: row.name,
         config: beforeAfterFromDbRow(row),
       })),
+      hasMore: (data?.length ?? 0) > pageSize,
     });
   }
 
@@ -31,14 +46,17 @@ export async function GET(request: Request) {
       : null;
   if (!widgetType) return NextResponse.json({ error: 'Invalid widget type' }, { status: 400 });
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('widgets')
     .select('*, businesses(name, address, total_reviews, average_rating)')
     .eq('widget_type', widgetType)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(from, to);
+  if (safeSearch) query = query.or(searchFilter);
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({
-    items: (data ?? []).map((row) => {
+    items: (data ?? []).slice(0, pageSize).map((row) => {
       const business = row.businesses as unknown as {
         name: string;
         address: string | null;
@@ -60,5 +78,6 @@ export async function GET(request: Request) {
         } : undefined,
       };
     }),
+    hasMore: (data?.length ?? 0) > pageSize,
   });
 }

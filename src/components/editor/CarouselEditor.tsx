@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
@@ -81,6 +82,7 @@ export function CarouselEditor({
   reviewsByBusiness?: Record<string, Review[]>;
   isNew?: boolean;
 }) {
+  const router = useRouter();
   const [selectedId] = useState<string>(() =>
     initialSelectedId && items.some((i) => i.widgetId === initialSelectedId)
       ? initialSelectedId
@@ -149,7 +151,7 @@ export function CarouselEditor({
       if (!res.ok) throw new Error(await res.text());
       if (isNew) {
         const row = await res.json();
-        window.location.replace(`/widgets/google-reviews-carousel?id=${row.id}`);
+        router.replace(`/widgets/google-reviews-carousel?id=${row.id}`);
         return;
       }
       setSaved(true);

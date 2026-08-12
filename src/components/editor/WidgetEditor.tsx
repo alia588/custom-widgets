@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
@@ -73,6 +74,7 @@ export function WidgetEditor({
   initialSelectedId?: string;
   isNew?: boolean;
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>(() =>
     initialSelectedId && items.some((i) => i.widgetId === initialSelectedId)
       ? initialSelectedId
@@ -133,7 +135,7 @@ export function WidgetEditor({
       if (!res.ok) throw new Error(await res.text());
       if (isNew) {
         const row = await res.json();
-        window.location.replace(`/widgets/google-reviews?id=${row.id}`);
+        router.replace(`/widgets/google-reviews?id=${row.id}`);
         return;
       }
       setSaved(true);

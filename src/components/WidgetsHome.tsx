@@ -534,12 +534,13 @@ export function WidgetsHome() {
   const [openType, setOpenType] = useState<WidgetTypeKey | null>(null);
   const [embedTarget, setEmbedTarget] = useState<EmbedTarget | null>(null);
   const [search, setSearch] = useState('');
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [beforeAfterItems, setBeforeAfterItems] = useState<BeforeAfterItem[]>([]);
   const [googleReviewsItems, setGoogleReviewsItems] = useState<GoogleReviewsItem[]>([]);
   const [carouselItems, setCarouselItems] = useState<GoogleReviewsItem[]>([]);
-  const [loadedTypes, setLoadedTypes] = useState<Set<WidgetTypeKey>>(() => new Set());
   const [listLoading, setListLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [listPage, setListPage] = useState(0);
+  const [listHasMore, setListHasMore] = useState(false);
   const [listError, setListError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -548,48 +549,73 @@ export function WidgetsHome() {
   // state closures would be stale. A ref reliably stops a second fetch
   // (double-delete → 404 toast, double-duplicate → two copies).
   const actionInFlightRef = useRef(false);
+  const listRequestRef = useRef(0);
 
   const query = search.trim().toLowerCase();
 
   const close = () => {
     setOpenType(null);
     setSearch('');
-    setVisibleCount(ITEMS_PER_PAGE);
     setEmbedTarget(null);
   };
 
-  const openModal = async (type: WidgetTypeKey) => {
-    setOpenType(type);
-    setVisibleCount(ITEMS_PER_PAGE);
+  const setItemsForType = useCallback((type: WidgetTypeKey, items: BeforeAfterItem[] | GoogleReviewsItem[], append: boolean) => {
+    if (type === 'before-after') {
+      setBeforeAfterItems((current) => append ? [...current, ...(items as BeforeAfterItem[])] : items as BeforeAfterItem[]);
+    } else if (type === 'google-reviews') {
+      setGoogleReviewsItems((current) => append ? [...current, ...(items as GoogleReviewsItem[])] : items as GoogleReviewsItem[]);
+    } else {
+      setCarouselItems((current) => append ? [...current, ...(items as GoogleReviewsItem[])] : items as GoogleReviewsItem[]);
+    }
+  }, []);
+
+  const fetchWidgetPage = useCallback(async (type: WidgetTypeKey, page: number, searchValue: string, append = false) => {
+    const requestId = ++listRequestRef.current;
+    if (append) setLoadingMore(true); else setListLoading(true);
     setListError('');
-    if (loadedTypes.has(type)) return;
-    setListLoading(true);
     try {
-      const response = await fetch(`/api/v1/widget-lists?type=${type}`);
+      const params = new URLSearchParams({ type, page: String(page), pageSize: String(ITEMS_PER_PAGE) });
+      if (searchValue.trim()) params.set('search', searchValue.trim());
+      const response = await fetch(`/api/v1/widget-lists?${params}`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Could not load widgets');
-      if (type === 'before-after') {
-        setBeforeAfterItems(payload.items);
-      } else {
-        if (type === 'google-reviews') setGoogleReviewsItems(payload.items);
-        else setCarouselItems(payload.items);
-      }
-      setLoadedTypes((current) => new Set(current).add(type));
+      if (requestId !== listRequestRef.current) return;
+      setItemsForType(type, payload.items, append);
+      setListPage(page);
+      setListHasMore(Boolean(payload.hasMore));
     } catch (error) {
-      setListError(error instanceof Error ? error.message : 'Could not load widgets');
+      if (requestId === listRequestRef.current) setListError(error instanceof Error ? error.message : 'Could not load widgets');
     } finally {
-      setListLoading(false);
+      if (requestId === listRequestRef.current) { setListLoading(false); setLoadingMore(false); }
     }
+  }, [setItemsForType]);
+
+  const openModal = (type: WidgetTypeKey) => {
+    setOpenType(type);
+    setSearch('');
+    setListError('');
+    setItemsForType(type, [], false);
+    setListLoading(true);
   };
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setVisibleCount(ITEMS_PER_PAGE);
   };
 
   const loadMore = useCallback(() => {
-    setVisibleCount((c) => c + ITEMS_PER_PAGE);
-  }, []);
+    if (!openType || listLoading || loadingMore || !listHasMore) return;
+    void fetchWidgetPage(openType, listPage + 1, search, true);
+  }, [fetchWidgetPage, listHasMore, listLoading, listPage, loadingMore, openType, search]);
+
+  useEffect(() => {
+    if (!openType) return;
+    const delay = search.trim() ? 400 : 0;
+    const timer = window.setTimeout(() => {
+      setItemsForType(openType, [], false);
+      void fetchWidgetPage(openType, 0, search);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [fetchWidgetPage, openType, search, setItemsForType]);
 
   // --- Before/After mutations ------------------------------------------------
 
@@ -769,8 +795,8 @@ export function WidgetsHome() {
 
   const filteredItems = getFilteredItems();
   const openCount = filteredItems.length;
-  const visibleItems = filteredItems.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredItems.length;
+  const visibleItems = filteredItems;
+  const hasMore = listHasMore;
 
   const renderGoogleReviewsCard = (
     item: GoogleReviewsItem,
@@ -969,7 +995,18 @@ export function WidgetsHome() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {renderModalBody()}
-            {hasMore && <LoadMoreSentinel onLoadMore={loadMore} />}
+            {loadingMore ? (
+              <div
+                className="col-span-full flex items-center justify-center gap-2 py-5 text-sm font-medium text-[var(--color-text-secondary)]"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+                Loading more widgets…
+              </div>
+            ) : hasMore ? (
+              <LoadMoreSentinel onLoadMore={loadMore} />
+            ) : null}
           </div>
         )}
       </Modal>
