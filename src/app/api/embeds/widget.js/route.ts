@@ -37,7 +37,9 @@ export async function GET(request: Request) {
         status: 304,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=31536000, immutable',
+          // Legacy snippets use this stable URL, so it must revalidate rather
+          // than claiming an immutable response that can never be replaced.
+          'Cache-Control': 'public, max-age=0, must-revalidate',
           ETag: etag,
         },
       });
@@ -47,7 +49,7 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'application/javascript; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
         'Content-Length': String(content.length),
         ETag: etag,
       },

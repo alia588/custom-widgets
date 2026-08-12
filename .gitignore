@@ -46,3 +46,5 @@ next-env.d.ts
 
 # generated widget bundle
 /public/widget.js
+/public/widget-manifest.json
+/public/widget.*.js

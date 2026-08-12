@@ -76,7 +76,7 @@ const widgetTypeMeta: Record<
   },
 };
 
-function buildEmbedCode(id: string) {
+function buildEmbedCode(id: string, embedBundlePath: string) {
   return [
     '<!-- BuiltByShah Widget Embed -->',
     `<div data-bbs-embed="${id}"></div>`,
@@ -85,7 +85,7 @@ function buildEmbedCode(id: string) {
     // bundle executes — that's what makes the first paint skip the skeleton
     // (see spec amendment 6).
     `<script src="${window.location.origin}/api/embeds/widget/${id}/data.js"></script>`,
-    `<script async src="${window.location.origin}/api/embeds/widget.js"></script>`,
+    `<script async src="${window.location.origin}${embedBundlePath}"></script>`,
     '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }
@@ -128,7 +128,34 @@ function EmbedCodeModal({
 }) {
   const [tab, setTab] = useState<'code' | 'howto'>('code');
   const [copied, setCopied] = useState(false);
-  const code = buildEmbedCode(id);
+  const [embedBundlePath, setEmbedBundlePath] = useState('/api/embeds/widget.js');
+  const code = buildEmbedCode(id, embedBundlePath);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/widget-manifest.json', { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return res.json() as Promise<{ file?: unknown }>;
+      })
+      .then((manifest) => {
+        if (
+          !cancelled &&
+          typeof manifest?.file === 'string' &&
+          /^widget\.[a-f0-9]{16}\.js$/.test(manifest.file)
+        ) {
+          setEmbedBundlePath(`/${manifest.file}`);
+        }
+      })
+      .catch(() => {
+        // The stable script path remains a safe fallback during local dev.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const copy = async () => {
     try {

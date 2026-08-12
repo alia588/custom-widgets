@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     // Generated widget bundle
-    "public/widget.js",
+    "public/widget*.js",
   ]),
 ]);
 

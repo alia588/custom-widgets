@@ -1,5 +1,9 @@
 import { createRoot } from 'react-dom/client';
-import { getWidgetComponent, getWidgetKind } from './widget-registry';
+import {
+  getBootstrappedWidgetComponent,
+  getWidgetComponent,
+  getWidgetKind,
+} from './widget-registry';
 import {
   getBeforeAfterWidget,
   getWidgetConfig,
@@ -101,14 +105,24 @@ function mountWidgets() {
     // on a busy page) and start their data fetch before mounting.
     prefetchWidgetData(widgetId);
 
-    const Widget = getWidgetComponent(widgetId);
+    // New snippets identify the component from their blocking bootstrap
+    // payload. The static registry remains only for legacy one-script embeds.
+    const bootstrap = getBootstrappedData(widgetId);
+    const Widget = bootstrap
+      ? getBootstrappedWidgetComponent(bootstrap)
+      : getWidgetComponent(widgetId);
 
     if (!Widget) {
       console.warn(
-        `[custom-widgets] No widget registered for ID: ${widgetId}`
+        `[custom-widgets] No bootstrap data or legacy registration for ID: ${widgetId}`
       );
       return;
     }
+
+    // GHL custom-code blocks frequently repeat the same bundle tag. Mount a
+    // placeholder only once, even when the bundle is evaluated repeatedly.
+    if (placeholder.dataset.bbsMounted === 'true') return;
+    placeholder.dataset.bbsMounted = 'true';
 
     // Use Shadow DOM to keep widget styles isolated from the host page.
     const shadowRoot = placeholder.attachShadow({ mode: 'open' });

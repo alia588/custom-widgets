@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { GoogleReviewsEmbed } from './components/GoogleReviewsEmbed';
 import { GoogleReviewsCarouselEmbed } from './components/GoogleReviewsCarouselEmbed';
 import { BeforeAfterEmbed } from './components/BeforeAfterEmbed';
+import type { BootstrapData } from './lib/bootstrap';
 
 export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: string }>;
 
@@ -15,7 +16,9 @@ export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: stri
  *   <div data-custom-widget="WIDGET_ID"></div>      (generic)
  *   <div data-designdetail-embed="WIDGET_ID"></div> (legacy, pre-rebrand)
  *
- * Add new widgets here when a new widget row is created in Supabase.
+ * The registry preserves support for legacy one-script snippets. New snippets
+ * carry bootstrap data, from which their component is resolved at runtime, so
+ * newly created widgets work immediately without a code deploy.
  */
 export type WidgetKind = 'reviews' | 'carousel' | 'before-after';
 
@@ -63,6 +66,24 @@ export function getWidgetComponent(widgetId: string): WidgetComponent | null {
 
 export function getWidgetKind(widgetId: string): WidgetKind | null {
   return registry[widgetId]?.kind ?? null;
+}
+
+export function getBootstrappedWidgetKind(data: BootstrapData): WidgetKind {
+  if (data.kind === 'before-after') return 'before-after';
+  return data.config.widget_type === 'google_reviews_carousel'
+    ? 'carousel'
+    : 'reviews';
+}
+
+export function getBootstrappedWidgetComponent(data: BootstrapData): WidgetComponent {
+  switch (getBootstrappedWidgetKind(data)) {
+    case 'before-after':
+      return BeforeAfterEmbed as WidgetComponent;
+    case 'carousel':
+      return GoogleReviewsCarouselEmbed as WidgetComponent;
+    default:
+      return GoogleReviewsEmbed as WidgetComponent;
+  }
 }
 
 export function listWidgetIds(): string[] {
