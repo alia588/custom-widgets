@@ -76,7 +76,7 @@ const widgetTypeMeta: Record<
   },
 };
 
-function buildEmbedCode(id: string) {
+function buildEmbedCode(id: string, embedBundlePath: string) {
   return [
     '<!-- BuiltByShah Widget Embed -->',
     `<div data-bbs-embed="${id}"></div>`,
@@ -85,7 +85,7 @@ function buildEmbedCode(id: string) {
     // bundle executes — that's what makes the first paint skip the skeleton
     // (see spec amendment 6).
     `<script src="${window.location.origin}/api/embeds/widget/${id}/data.js"></script>`,
-    `<script async src="${window.location.origin}/api/embeds/widget.js"></script>`,
+    `<script async src="${window.location.origin}${embedBundlePath}"></script>`,
     '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }
@@ -119,16 +119,18 @@ function EmbedCodeModal({
   id,
   name,
   typeLabel,
+  embedBundlePath,
   onClose,
 }: {
   id: string;
   name: string;
   typeLabel: string;
+  embedBundlePath: string;
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<'code' | 'howto'>('code');
   const [copied, setCopied] = useState(false);
-  const code = buildEmbedCode(id);
+  const code = buildEmbedCode(id, embedBundlePath);
 
   const copy = async () => {
     try {
@@ -397,6 +399,8 @@ function WidgetCard({
           variant="secondary"
           size="sm"
           fullWidth
+          onMouseEnter={() => router.prefetch(editHref)}
+          onFocus={() => router.prefetch(editHref)}
           onClick={() => router.push(editHref)}
           iconLeft={
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -529,10 +533,13 @@ export function WidgetsHome({
   beforeAfterItems: initialBeforeAfter,
   googleReviewsItems: initialGoogleReviews,
   carouselItems: initialCarousel,
+  embedBundlePath,
 }: {
   beforeAfterItems: BeforeAfterItem[];
   googleReviewsItems: GoogleReviewsItem[];
   carouselItems: GoogleReviewsItem[];
+  /** Content-hashed bundle for immutable browser/CDN caching. */
+  embedBundlePath: string;
 }) {
   const router = useRouter();
   const [openType, setOpenType] = useState<WidgetTypeKey | null>(null);
@@ -686,7 +693,6 @@ export function WidgetsHome({
             type === 'google-reviews-carousel' ? 'google_reviews_carousel' : 'google_reviews',
           name: widgetTypeMeta[type].typeLabel,
           ...configToDbRow(defaultWidgetConfig),
-          cached_reviews: source.reviews ?? [],
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -715,7 +721,6 @@ export function WidgetsHome({
           widget_type: item.widgetType,
           name: `${item.name} (Copy)`,
           ...configToDbRow(item.config),
-          cached_reviews: item.reviews ?? [],
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -771,7 +776,7 @@ export function WidgetsHome({
         }
       >
         {isCarousel ? (
-          <CarouselThumbnail item={item} />
+          item.reviews?.length ? <CarouselThumbnail item={item} /> : <CarouselMock />
         ) : (
           <div className="bg-white p-3">
             <GoogleReviewsWidget
@@ -950,6 +955,7 @@ export function WidgetsHome({
           id={embedTarget.id}
           name={embedTarget.name}
           typeLabel={embedTarget.typeLabel}
+          embedBundlePath={embedBundlePath}
           onClose={() => setEmbedTarget(null)}
         />
       )}

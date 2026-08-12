@@ -45,4 +45,5 @@ yarn-error.log*
 next-env.d.ts
 
 # generated widget bundle
-/public/widget.js
+/public/widget*.js
+/public/widget-manifest.json

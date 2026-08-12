@@ -2,6 +2,7 @@ import { supabase } from '@/lib/db';
 import { configFromDbRow } from '@/lib/widget-config';
 import { reviews as fallbackReviews } from '@/lib/reviews-data';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
+import { mapReviewsToClient, mapReviewRow } from '@/lib/widget-mappers';
 import {
   CarouselEditor,
   type CarouselBusiness,
@@ -25,39 +26,23 @@ export default async function GoogleReviewsCarouselPage({
     .from('widgets')
     .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
     .eq('widget_type', 'google_reviews_carousel')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false });
 
   const { data: businessRows } = await supabase
     .from('businesses')
     .select('*')
     .order('name', { ascending: true });
 
-  // PostgREST caps a single request at 1000 rows — page through all reviews.
-  const PAGE_SIZE = 1000;
-  const reviewRows: Record<string, any>[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data } = await supabase
-      .from('reviews')
-      .select('*')
-      .range(from, from + PAGE_SIZE - 1);
-    if (!data || data.length === 0) break;
-    reviewRows.push(...data);
-    if (data.length < PAGE_SIZE) break;
-  }
-
   const reviewsByBusiness = new Map<string, Review[]>();
-  for (const r of reviewRows ?? []) {
-    const list = reviewsByBusiness.get(r.business_id) ?? [];
-    list.push({
-      id: r.google_review_id ?? r.id,
-      authorName: r.author_name ?? 'Anonymous',
-      authorPhotoUrl: r.author_photo_url ?? undefined,
-      rating: r.rating,
-      text: r.text ?? '',
-      relativeTime: r.relative_time ?? '',
-      images: r.images ?? [],
-    });
-    reviewsByBusiness.set(r.business_id, list);
+  for (const widget of widgets ?? []) {
+    // Each widget carries its own embed-ready review snapshot. This avoids a
+    // full-table scan and pagination loop whenever the editor opens.
+    if (!reviewsByBusiness.has(widget.business_id)) {
+      reviewsByBusiness.set(
+        widget.business_id,
+        mapReviewsToClient((widget.cached_reviews ?? []).map(mapReviewRow))
+      );
+    }
   }
 
   const allBusinesses: CarouselBusiness[] = (businessRows ?? []).map((b) => ({
@@ -90,7 +75,10 @@ export default async function GoogleReviewsCarouselPage({
       businessId: w.business_id,
       initialConfig: configFromDbRow(w),
       business: businessInfo,
-      reviews: reviewsByBusiness.get(w.business_id) ?? fallbackReviews,
+      reviews: (() => {
+        const cached = reviewsByBusiness.get(w.business_id) ?? [];
+        return cached.length > 0 ? cached : fallbackReviews;
+      })(),
     };
   });
 

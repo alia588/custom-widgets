@@ -21,7 +21,7 @@ export default async function BeforeAfterWidgetPage({
   const { data: widgets } = await supabase
     .from('before_after_widgets')
     .select('*')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false });
 
   const items: BeforeAfterEditorWidget[] = (widgets ?? []).map((w) => ({
     widgetId: w.id,

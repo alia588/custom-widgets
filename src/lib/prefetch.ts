@@ -39,10 +39,16 @@ function dedupe<T>(key: string, run: () => Promise<T>): Promise<T> {
 
 export function getWidgetConfig(
   widgetId: string,
-  apiOrigin: string
+  apiOrigin: string,
+  revalidate = false
 ): Promise<WidgetApiResponse> {
-  return dedupe(`${apiOrigin}/api/v1/widgets/${widgetId}`, async () => {
-    const res = await fetch(`${apiOrigin}/api/v1/widgets/${widgetId}`);
+  return dedupe(`${apiOrigin}/api/v1/widgets/${widgetId}:${revalidate ? 'revalidate' : 'default'}`, async () => {
+    const res = await fetch(`${apiOrigin}/api/v1/widgets/${widgetId}`, {
+      // A bootstrapped widget is already visible. Ask caches to validate this
+      // background request so an old stale-while-revalidate response never
+      // keeps an editor update stale for the whole page view.
+      cache: revalidate ? 'no-cache' : 'default',
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json() as Promise<WidgetApiResponse>;
   });
@@ -50,10 +56,13 @@ export function getWidgetConfig(
 
 export function getWidgetReviews(
   widgetId: string,
-  apiOrigin: string
+  apiOrigin: string,
+  revalidate = false
 ): Promise<ReviewsApiResponse> {
-  return dedupe(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews`, async () => {
-    const res = await fetch(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews`);
+  return dedupe(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews:${revalidate ? 'revalidate' : 'default'}`, async () => {
+    const res = await fetch(`${apiOrigin}/api/v1/widgets/${widgetId}/reviews`, {
+      cache: revalidate ? 'no-cache' : 'default',
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json() as Promise<ReviewsApiResponse>;
   });
@@ -61,10 +70,13 @@ export function getWidgetReviews(
 
 export function getBeforeAfterWidget(
   widgetId: string,
-  apiOrigin: string
+  apiOrigin: string,
+  revalidate = false
 ): Promise<Record<string, unknown>> {
-  return dedupe(`${apiOrigin}/api/v1/before-after-widgets/${widgetId}`, async () => {
-    const res = await fetch(`${apiOrigin}/api/v1/before-after-widgets/${widgetId}`);
+  return dedupe(`${apiOrigin}/api/v1/before-after-widgets/${widgetId}:${revalidate ? 'revalidate' : 'default'}`, async () => {
+    const res = await fetch(`${apiOrigin}/api/v1/before-after-widgets/${widgetId}`, {
+      cache: revalidate ? 'no-cache' : 'default',
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json() as Promise<Record<string, unknown>>;
   });

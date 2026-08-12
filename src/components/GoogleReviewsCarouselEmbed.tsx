@@ -47,7 +47,7 @@ export function GoogleReviewsCarouselEmbed({
   useEffect(() => {
     let cancelled = false;
 
-    getWidgetConfig(widgetId, apiOrigin)
+    getWidgetConfig(widgetId, apiOrigin, getBootstrappedData(widgetId) !== null)
       .then((row) => {
         if (cancelled) return;
         const nextConfig = configFromDbRow(row);
@@ -77,7 +77,7 @@ export function GoogleReviewsCarouselEmbed({
   useEffect(() => {
     let cancelled = false;
 
-    getWidgetReviews(widgetId, apiOrigin)
+    getWidgetReviews(widgetId, apiOrigin, getBootstrappedData(widgetId) !== null)
       .then((data) => {
         if (cancelled) return;
         const next = mapReviewsToClient(data.reviews);

@@ -1,5 +1,9 @@
 import { createRoot } from 'react-dom/client';
-import { getWidgetComponent, getWidgetKind } from './widget-registry';
+import {
+  getBootstrappedWidgetComponent,
+  getWidgetComponent,
+  getWidgetKind,
+} from './widget-registry';
 import {
   getBeforeAfterWidget,
   getWidgetConfig,
@@ -101,11 +105,17 @@ function mountWidgets() {
     // on a busy page) and start their data fetch before mounting.
     prefetchWidgetData(widgetId);
 
-    const Widget = getWidgetComponent(widgetId);
+    // A new snippet's blocking data.js has already identified the widget
+    // type. This removes the old deploy-time registry bottleneck: widgets
+    // created in the dashboard can be embedded immediately.
+    const bootstrap = getBootstrappedData(widgetId);
+    const Widget = bootstrap
+      ? getBootstrappedWidgetComponent(bootstrap)
+      : getWidgetComponent(widgetId);
 
     if (!Widget) {
       console.warn(
-        `[custom-widgets] No widget registered for ID: ${widgetId}`
+        `[custom-widgets] No bootstrap data or legacy registration for ID: ${widgetId}`
       );
       return;
     }

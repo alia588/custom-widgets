@@ -35,7 +35,7 @@ export function BeforeAfterEmbed({
   useEffect(() => {
     let cancelled = false;
 
-    getBeforeAfterWidget(widgetId, apiOrigin)
+    getBeforeAfterWidget(widgetId, apiOrigin, getBootstrappedData(widgetId) !== null)
       .then((row) => {
         if (cancelled) return;
         const next = beforeAfterFromDbRow(row);

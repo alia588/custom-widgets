@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/db';
 import { beforeAfterFromDbRow } from '@/lib/before-after-config';
 import { configFromDbRow } from '@/lib/widget-config';
-import type { Review } from '@/lib/reviews-data';
+import { getEmbedBundlePath } from '@/lib/embed-bundle';
+import { WIDGET_SELECT } from '@/lib/widget-queries';
 import {
   WidgetsHome,
   type BeforeAfterItem,
@@ -11,19 +12,20 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const [{ data: beforeAfterRows }, { data: reviewWidgetRows }, { data: carouselWidgetRows }] =
+  const [embedBundlePath, { data: beforeAfterRows }, { data: reviewWidgetRows }, { data: carouselWidgetRows }] =
     await Promise.all([
-      supabase.from('before_after_widgets').select('*').order('created_at', { ascending: true }),
+      getEmbedBundlePath(),
+      supabase.from('before_after_widgets').select('*').order('created_at', { ascending: false }),
       supabase
         .from('widgets')
-        .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+        .select(WIDGET_SELECT)
         .eq('widget_type', 'google_reviews')
-        .order('created_at', { ascending: true }),
+        .order('created_at', { ascending: false }),
       supabase
         .from('widgets')
-        .select('*, businesses(name, place_id, address, total_reviews, average_rating)')
+        .select(WIDGET_SELECT)
         .eq('widget_type', 'google_reviews_carousel')
-        .order('created_at', { ascending: true }),
+        .order('created_at', { ascending: false }),
     ]);
 
   const beforeAfterItems: BeforeAfterItem[] = (beforeAfterRows ?? []).map((w) => ({
@@ -43,18 +45,6 @@ export default async function Home() {
       average_rating: number;
     } | null;
 
-    const reviews: Review[] = (w.cached_reviews ?? []).map(
-      (r: Record<string, unknown>) => ({
-        id: r.id,
-        authorName: r.authorName,
-        authorPhotoUrl: r.authorPhotoUrl ?? undefined,
-        rating: r.rating,
-        text: r.text ?? '',
-        relativeTime: r.relativeTime ?? '',
-        images: r.images ?? [],
-      })
-    );
-
     return {
       id: w.id,
       businessId: w.business_id,
@@ -69,7 +59,9 @@ export default async function Home() {
             averageRating: Number(business.average_rating),
           }
         : undefined,
-      reviews,
+      // The home screen deliberately does not select cached_reviews. Those
+      // image-heavy payloads are only needed by an editor or live embed and
+      // were making every dashboard action wait on every widget's reviews.
     };
   };
 
@@ -93,6 +85,7 @@ export default async function Home() {
           beforeAfterItems={beforeAfterItems}
           googleReviewsItems={googleReviewsItems}
           carouselItems={carouselItems}
+          embedBundlePath={embedBundlePath}
         />
       </div>
     </div>

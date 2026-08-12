@@ -170,14 +170,13 @@ export function GoogleReviewsPanel({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setVisibleCount(config.drawerReviewsPerPage);
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen, config.drawerReviewsPerPage]);
+  }, [isOpen]);
 
   const businessInfo: BusinessInfo = business ?? {
     name: 'SSR Diesel Repairs',
