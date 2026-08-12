@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { requireAdmin } from '@/lib/require-admin';
+import { mapReviewRow } from '@/lib/widget-mappers';
 
 // Creates a Google Reviews widget (used by the home-page modal for
 // duplicate — new widgets normally come from scripts/add-business.mjs).
@@ -15,6 +16,31 @@ export async function POST(request: Request) {
   delete body.created_at;
   delete body.updated_at;
   delete body.businesses;
+
+  if (!body.business_id) {
+    return NextResponse.json(
+      { error: 'Create failed', message: 'business_id is required' },
+      { status: 400 }
+    );
+  }
+
+  // The editor may have just fetched reviews before this widget exists, so
+  // build the new widget cache from the normalized business reviews here.
+  // Never trust a client-provided cached_reviews payload.
+  const { data: reviewRows, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('business_id', body.business_id);
+
+  if (reviewsError) {
+    return NextResponse.json(
+      { error: 'Create failed', message: reviewsError.message },
+      { status: 500 }
+    );
+  }
+
+  body.cached_reviews = (reviewRows ?? []).map(mapReviewRow);
+  body.last_synced_at = body.cached_reviews.length > 0 ? new Date().toISOString() : null;
 
   const { data, error } = await supabase
     .from('widgets')
