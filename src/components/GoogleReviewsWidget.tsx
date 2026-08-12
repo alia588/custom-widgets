@@ -138,13 +138,17 @@ export function buildBadgeStyles(config: WidgetConfig): {
   };
 
   const cta: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '7px',
     borderRadius: '9999px',
     background: config.ctaBackgroundColor,
     color: config.ctaTextColor,
     border: `1px solid ${config.badgeBorderColor}`,
     padding: compact ? '5px 10px' : '6px 14px',
     fontSize: compact ? '10px' : '11px',
-    fontWeight: 500,
+    fontWeight: 600,
     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
     position: horizontal ? 'static' : 'absolute',
     bottom: horizontal ? undefined : '-10px',
@@ -266,7 +270,7 @@ export function GoogleReviewsWidget({
                 </div>
               </div>
               {subtitleEl}
-              {config.ctaEnabled && <div style={styles.cta}>{config.ctaText}</div>}
+              {config.ctaEnabled && <div style={styles.cta}><GoogleLogo size={config.badgeCompactMode ? 13 : 15} />{config.ctaText}</div>}
             </>
           ) : (
             <>
@@ -286,7 +290,7 @@ export function GoogleReviewsWidget({
               </div>
               {subtitleEl}
               {config.ctaEnabled && (
-                <div style={styles.cta}>{config.ctaText}</div>
+                <div style={styles.cta}><GoogleLogo size={config.badgeCompactMode ? 13 : 15} />{config.ctaText}</div>
               )}
             </>
           )}
