@@ -7,9 +7,11 @@ import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleReviewsWidget } from '@/components/GoogleReviewsWidget';
 import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './tabs';
+import type { BusinessOption } from './tabs';
 
 export interface EditorWidget {
   widgetId: string;
+  businessId: string;
   widgetName: string;
   initialConfig: WidgetConfig;
   business: BusinessInfo;
@@ -65,9 +67,11 @@ const tabMeta: Record<EditorTab, EditorTabMeta> = {
 export function WidgetEditor({
   items,
   initialSelectedId,
+  isNew = false,
 }: {
   items: EditorWidget[];
   initialSelectedId?: string;
+  isNew?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string>(() =>
     initialSelectedId && items.some((i) => i.widgetId === initialSelectedId)
@@ -77,9 +81,15 @@ export function WidgetEditor({
   const [configs, setConfigs] = useState<Record<string, WidgetConfig>>(() =>
     Object.fromEntries(items.map((i) => [i.widgetId, i.initialConfig]))
   );
+  const [names, setNames] = useState<Record<string, string>>(() =>
+    Object.fromEntries(items.map((i) => [i.widgetId, i.widgetName]))
+  );
   const [activeTab, setActiveTab] = useState<EditorTab>('content');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [newBusiness, setNewBusiness] = useState<(BusinessInfo & { id: string }) | null>(null);
+  const [selectedReviews, setSelectedReviews] = useState<Review[] | null>(null);
+  const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
 
   const selected = items.find((i) => i.widgetId === selectedId);
 
@@ -92,6 +102,7 @@ export function WidgetEditor({
   }
 
   const config = configs[selectedId] ?? selected.initialConfig;
+  const widgetName = names[selectedId] ?? selected.widgetName;
 
   const update = <K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
     setConfigs((c) => ({ ...c, [selectedId]: { ...config, [key]: value } }));
@@ -99,14 +110,32 @@ export function WidgetEditor({
   };
 
   const save = async () => {
+    if (reviewLoadStatus?.state === 'loading') {
+      alert('Wait for reviews to finish loading before saving.');
+      return;
+    }
+    if (isNew && !(newBusiness?.id ?? selected.businessId)) {
+      alert('Select a Google business before saving.');
+      return;
+    }
     setSaving(true);
     try {
-      const res = await fetch(`/api/v1/widgets/${selectedId}`, {
-        method: 'PATCH',
+      const res = await fetch(isNew ? '/api/v1/widgets' : `/api/v1/widgets/${selectedId}`, {
+        method: isNew ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(configToDbRow(config)),
+        body: JSON.stringify({
+          ...(isNew ? { business_id: newBusiness?.id ?? selected.businessId, widget_type: 'google_reviews' } : {}),
+          ...(!isNew && newBusiness ? { business_id: newBusiness.id } : {}),
+          name: widgetName,
+          ...configToDbRow(config),
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
+      if (isNew) {
+        const row = await res.json();
+        window.location.replace(`/widgets/google-reviews?id=${row.id}`);
+        return;
+      }
       setSaved(true);
     } catch (err) {
       alert(`Save failed: ${err instanceof Error ? err.message : 'unknown error'}`);
@@ -118,17 +147,42 @@ export function WidgetEditor({
   const tabProps = {
     config,
     update,
-    businessName: selected.business.name,
-    businessAddress: selected.business.address,
-    reviews: selected.reviews,
-    businesses: items.map((i) => ({
-      id: i.widgetId,
-      name: i.business.name,
-      address: i.business.address,
-    })),
-    selectedBusinessId: selectedId,
-    onSelectBusiness: (id: string) => {
-      setSelectedId(id);
+    widgetName,
+    onNameChange: (name: string) => {
+      setNames((current) => ({ ...current, [selectedId]: name }));
+      setSaved(false);
+    },
+    businessName: newBusiness?.name ?? selected.business.name,
+    businessAddress: newBusiness?.address ?? selected.business.address,
+    reviews: selectedReviews ?? selected.reviews,
+    reviewLoadStatus,
+    businesses: [],
+    selectedBusinessId: newBusiness?.id ?? selected.businessId,
+    onSelectBusiness: async (option: BusinessOption) => {
+      if (option.source === 'google') {
+        setNewBusiness({ id: option.id, name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 });
+        setSelectedReviews([]);
+        setReviewLoadStatus({ state: 'loading', message: 'Fetching reviews…' });
+        try {
+          const response = await fetch('/api/v1/businesses', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(option),
+          });
+          const business = await response.json();
+          if (!response.ok) throw new Error(business.message ?? business.error ?? 'Could not fetch reviews');
+          const reviews = business.reviews ?? [];
+          setNewBusiness({ id: business.id, name: business.name, address: business.address, averageRating: business.averageRating, totalReviews: business.totalReviews });
+          setSelectedReviews(reviews);
+          setReviewLoadStatus({ state: 'complete', message: `${reviews.length} reviews loaded` });
+        } catch (error) {
+          setNewBusiness(null);
+          setSelectedReviews(null);
+          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Review fetch failed' });
+        }
+      } else {
+        const item = items.find((i) => i.businessId === option.id);
+        if (item) { setSelectedId(item.widgetId); setNewBusiness(null); setSelectedReviews(null); setReviewLoadStatus(null); }
+      }
       setSaved(false);
     },
   };
@@ -144,15 +198,15 @@ export function WidgetEditor({
       saving={saving}
       saved={saved}
       onSave={save}
-      previewLabel={selected.widgetName}
+      previewLabel={widgetName}
       preview={
         <div className="flex h-full items-center justify-center p-10">
           <GoogleReviewsWidget
             key={selectedId}
             widgetId={selectedId}
             config={config}
-            business={selected.business}
-            reviews={selected.reviews}
+            business={newBusiness ?? selected.business}
+            reviews={selectedReviews ?? selected.reviews}
             preview={config.position !== 'inline'}
           />
         </div>

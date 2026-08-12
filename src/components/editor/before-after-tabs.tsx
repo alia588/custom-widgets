@@ -371,13 +371,19 @@ export function LayoutTab({ config, update }: BeforeAfterTabProps) {
 
 export function SettingsTab({ config, update }: BeforeAfterTabProps) {
   return (
-    <Section title="Touch Behavior">
+    <Section title="Slider Behavior">
       <Card>
         <Toggle
           checked={config.captureTouchMode}
           onChange={(v) => update('captureTouchMode', v)}
           label="Capture Touch Mode"
           description="Tap anywhere to move the slider"
+        />
+        <Toggle
+          checked={config.autoSlide}
+          onChange={(v) => update('autoSlide', v)}
+          label="Move Automatically"
+          description="Moves between 25% and 75% in 3 seconds, pausing for 3 seconds at each end"
         />
       </Card>
     </Section>

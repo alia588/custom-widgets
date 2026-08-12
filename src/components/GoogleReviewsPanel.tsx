@@ -475,6 +475,8 @@ export function GoogleReviewsPanel({
                               key={i}
                               src={googlePhotoVariant(src, reviewImageSize * 2)}
                               alt=""
+                              loading="lazy"
+                              decoding="async"
                               onClick={() => setLightbox(src)}
                               style={{
                                 width: `${reviewImageSize}px`,
