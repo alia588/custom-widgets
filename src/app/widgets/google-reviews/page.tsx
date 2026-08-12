@@ -59,5 +59,12 @@ export default async function GoogleReviewsWidgetPage({
     });
   }
 
-  return <WidgetEditor items={items} initialSelectedId={newWidget === '1' ? 'new' : id} isNew={newWidget === '1'} />;
+  return (
+    <WidgetEditor
+      key={newWidget === '1' ? 'new' : id}
+      items={items}
+      initialSelectedId={newWidget === '1' ? 'new' : id}
+      isNew={newWidget === '1'}
+    />
+  );
 }
