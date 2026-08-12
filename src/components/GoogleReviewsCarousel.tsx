@@ -271,6 +271,8 @@ export function GoogleReviewsCarousel({
               key={i}
               src={googlePhotoVariant(src, avatarSize * 2)}
               alt=""
+              loading="lazy"
+              decoding="async"
               onClick={() => setLightbox(src)}
               style={{
                 width: `${avatarSize}px`,

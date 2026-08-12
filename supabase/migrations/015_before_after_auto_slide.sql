@@ -1,0 +1,2 @@
+ALTER TABLE before_after_widgets
+ADD COLUMN IF NOT EXISTS auto_slide BOOLEAN NOT NULL DEFAULT false;

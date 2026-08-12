@@ -38,6 +38,7 @@ export interface BeforeAfterConfig {
 
   // Settings
   captureTouchMode: boolean;
+  autoSlide: boolean;
 }
 
 export const defaultBeforeAfterConfig: BeforeAfterConfig = {
@@ -65,6 +66,7 @@ export const defaultBeforeAfterConfig: BeforeAfterConfig = {
   instructionSize: 14,
 
   captureTouchMode: true,
+  autoSlide: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -99,6 +101,7 @@ export function beforeAfterFromDbRow(row: Record<string, any>): BeforeAfterConfi
     instructionSize: row.instruction_size ?? 14,
 
     captureTouchMode: row.capture_touch_mode ?? true,
+    autoSlide: row.auto_slide ?? false,
   };
 }
 
@@ -128,6 +131,7 @@ export function beforeAfterToDbRow(config: BeforeAfterConfig): Record<string, un
     instruction_size: config.instructionSize,
 
     capture_touch_mode: config.captureTouchMode,
+    auto_slide: config.autoSlide,
 
     updated_at: new Date().toISOString(),
   };

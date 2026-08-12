@@ -7,6 +7,7 @@ import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { ScaledCarouselPreview } from '@/components/ScaledCarouselPreview';
 import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './carousel-tabs';
+import type { BusinessOption } from './tabs';
 
 export interface CarouselEditorWidget {
   widgetId: string;
@@ -72,11 +73,13 @@ export function CarouselEditor({
   initialSelectedId,
   allBusinesses = [],
   reviewsByBusiness = {},
+  isNew = false,
 }: {
   items: CarouselEditorWidget[];
   initialSelectedId?: string;
   allBusinesses?: CarouselBusiness[];
   reviewsByBusiness?: Record<string, Review[]>;
+  isNew?: boolean;
 }) {
   const [selectedId] = useState<string>(() =>
     initialSelectedId && items.some((i) => i.widgetId === initialSelectedId)
@@ -95,6 +98,9 @@ export function CarouselEditor({
   const [activeTab, setActiveTab] = useState<EditorTab>('content');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [addedBusinesses, setAddedBusinesses] = useState<CarouselBusiness[]>([]);
+  const [loadedReviews, setLoadedReviews] = useState<Record<string, Review[]>>({});
+  const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
 
   const selected = items.find((i) => i.widgetId === selectedId);
 
@@ -110,8 +116,9 @@ export function CarouselEditor({
   const config = configs[selectedId] ?? selected.initialConfig;
   const widgetName = names[selectedId] ?? selected.widgetName;
   const businessId = businessIds[selectedId] ?? selected.businessId;
-  const business = allBusinesses.find((b) => b.id === businessId) ?? selected.business;
-  const reviews = reviewsByBusiness[businessId] ?? [];
+  const availableBusinesses = [...addedBusinesses, ...allBusinesses];
+  const business = availableBusinesses.find((b) => b.id === businessId) ?? selected.business;
+  const reviews = loadedReviews[businessId] ?? reviewsByBusiness[businessId] ?? selected.reviews;
 
   const update = <K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
     setConfigs((c) => ({ ...c, [selectedId]: { ...config, [key]: value } }));
@@ -119,18 +126,32 @@ export function CarouselEditor({
   };
 
   const save = async () => {
+    if (reviewLoadStatus?.state === 'loading') {
+      alert('Wait for reviews to finish loading before saving.');
+      return;
+    }
+    if (!businessId) {
+      alert('Select a Google business before saving.');
+      return;
+    }
     setSaving(true);
     try {
-      const res = await fetch(`/api/v1/widgets/${selectedId}`, {
-        method: 'PATCH',
+      const res = await fetch(isNew ? '/api/v1/widgets' : `/api/v1/widgets/${selectedId}`, {
+        method: isNew ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: widgetName,
           business_id: businessId,
+          ...(isNew ? { widget_type: 'google_reviews_carousel' } : {}),
           ...configToDbRow(config),
         }),
       });
       if (!res.ok) throw new Error(await res.text());
+      if (isNew) {
+        const row = await res.json();
+        window.location.replace(`/widgets/google-reviews-carousel?id=${row.id}`);
+        return;
+      }
       setSaved(true);
     } catch (err) {
       alert(`Save failed: ${err instanceof Error ? err.message : 'unknown error'}`);
@@ -149,13 +170,34 @@ export function CarouselEditor({
     },
     business,
     reviews,
-    businesses: allBusinesses.map((b) => ({
-      id: b.id,
-      name: b.name,
-      address: b.address,
-    })),
+    reviewLoadStatus,
+    businesses: [],
     selectedBusinessId: businessId,
-    onSelectBusiness: (id: string) => {
+    onSelectBusiness: async (option: BusinessOption) => {
+      let id = option.id;
+      if (option.source === 'google') {
+        setAddedBusinesses((current) => [{ id, name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 }, ...current.filter((b) => b.id !== id)]);
+        setBusinessIds((current) => ({ ...current, [selectedId]: id }));
+        setReviewLoadStatus({ state: 'loading', message: 'Fetching reviews…' });
+        try {
+          const response = await fetch('/api/v1/businesses', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(option),
+          });
+          const savedBusiness = await response.json();
+          if (!response.ok) throw new Error(savedBusiness.message ?? savedBusiness.error ?? 'Could not fetch reviews');
+          id = savedBusiness.id;
+          const reviews = savedBusiness.reviews ?? [];
+          setAddedBusinesses((current) => [{ id, name: savedBusiness.name, address: savedBusiness.address, averageRating: savedBusiness.averageRating, totalReviews: savedBusiness.totalReviews }, ...current.filter((b) => b.id !== id && b.id !== option.id)]);
+          setLoadedReviews((current) => ({ ...current, [id]: reviews }));
+          setReviewLoadStatus({ state: 'complete', message: `${reviews.length} reviews loaded` });
+        } catch (error) {
+          setAddedBusinesses((current) => current.filter((b) => b.id !== option.id));
+          setBusinessIds((current) => ({ ...current, [selectedId]: selected.businessId }));
+          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Review fetch failed' });
+          return;
+        }
+      }
       setBusinessIds((m) => ({ ...m, [selectedId]: id }));
       setSaved(false);
     },
