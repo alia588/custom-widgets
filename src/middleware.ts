@@ -6,6 +6,8 @@ import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env';
 function isPublicEmbedPath(pathname: string): boolean {
   return (
     pathname === '/api/embeds/widget.js' ||
+    pathname === '/widget-manifest.json' ||
+    /^\/widget\.[a-f0-9]{16}\.js$/.test(pathname) ||
     pathname.startsWith('/api/embeds/widget/')
   );
 }
