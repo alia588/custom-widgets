@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { aspectRatioPadding } from '@/lib/before-after-config';
@@ -87,28 +87,8 @@ export function BeforeAfterWidget({
   compact?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState(config.autoSlide ? 25 : config.sliderPosition);
+  const [position, setPosition] = useState(config.sliderPosition);
   const draggingRef = useRef(false);
-
-  useEffect(() => {
-    if (!config.autoSlide) {
-      return;
-    }
-
-    let atRight = false;
-    const start = window.setTimeout(() => {
-      atRight = true;
-      setPosition(75);
-    }, 3000);
-    const interval = window.setInterval(() => {
-      atRight = !atRight;
-      setPosition(atRight ? 75 : 25);
-    }, 6000);
-    return () => {
-      window.clearTimeout(start);
-      window.clearInterval(interval);
-    };
-  }, [config.autoSlide, config.sliderPosition]);
 
   const clamp = (v: number) => Math.min(100, Math.max(0, v));
 
@@ -222,7 +202,6 @@ export function BeforeAfterWidget({
             position: 'absolute',
             inset: 0,
             clipPath: `inset(0 ${100 - position}% 0 0)`,
-            transition: config.autoSlide ? 'clip-path 3s linear' : undefined,
             zIndex: 1,
           }}
         >
@@ -241,7 +220,6 @@ export function BeforeAfterWidget({
             background: '#FFFFFF',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: config.autoSlide ? 'left 3s linear' : undefined,
           }}
         />
         <div
@@ -260,7 +238,6 @@ export function BeforeAfterWidget({
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: config.autoSlide ? 'left 3s linear' : undefined,
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2.5">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Review } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
 import {
@@ -20,10 +20,6 @@ export interface BusinessOption {
   id: string;
   name: string;
   address: string;
-  placeId?: string;
-  averageRating?: number;
-  totalReviews?: number;
-  source?: 'google';
 }
 
 export interface TabProps {
@@ -34,10 +30,7 @@ export interface TabProps {
   reviews?: Review[];
   businesses?: BusinessOption[];
   selectedBusinessId?: string;
-  onSelectBusiness?: (business: BusinessOption) => void | Promise<void>;
-  widgetName: string;
-  onNameChange: (name: string) => void;
-  reviewLoadStatus?: { state: 'loading' | 'complete' | 'error'; message: string } | null;
+  onSelectBusiness?: (id: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,38 +45,9 @@ export function ContentTab({
   businesses = [],
   selectedBusinessId,
   onSelectBusiness,
-  widgetName,
-  onNameChange,
-  reviewLoadStatus,
 }: TabProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
-  const [remoteBusinesses, setRemoteBusinesses] = useState<BusinessOption[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState('');
-
-  useEffect(() => {
-    const query = pickerQuery.trim();
-    if (!pickerOpen || query.length < 3) {
-      return;
-    }
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setSearching(true);
-      setSearchError('');
-      try {
-        const response = await fetch(`/api/v1/businesses/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error ?? 'Search failed');
-        setRemoteBusinesses(payload.results ?? []);
-      } catch (error) {
-        if (!controller.signal.aborted) setSearchError(error instanceof Error ? error.message : 'Search failed');
-      } finally {
-        if (!controller.signal.aborted) setSearching(false);
-      }
-    }, 700);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [pickerOpen, pickerQuery]);
 
   const q = pickerQuery.trim().toLowerCase();
   const filteredBusinesses = q
@@ -91,42 +55,21 @@ export function ContentTab({
         (b) => b.name.toLowerCase().includes(q) || b.address.toLowerCase().includes(q)
       )
     : businesses;
-  const displayedBusinesses = q.length >= 3 ? remoteBusinesses : filteredBusinesses;
-  const isSearching = q.length >= 3 && searching;
-  const visibleSearchError = q.length >= 3 ? searchError : '';
 
   return (
     <>
-      <Section title="Name">
-        <Card>
-          <TextInput value={widgetName} onChange={onNameChange} placeholder="Widget name" />
-        </Card>
-      </Section>
       <Section title="Google Business">
         <Card>
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${selectedBusinessId ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]'}`}>
-                {selectedBusinessId ? (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
-                  </svg>
-                )}
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-semibold break-words text-[var(--color-text-primary)]">{selectedBusinessId ? (businessName || 'Business') : 'No business selected'}</div>
+                <div className="text-sm font-semibold break-words text-[var(--color-text-primary)]">{businessName ?? 'Business'}</div>
                 <div className="truncate text-xs text-[var(--color-text-secondary)]">{businessAddress ?? ''}</div>
-                {reviewLoadStatus && (
-                  <div className={`mt-1 flex items-center gap-1.5 text-xs ${reviewLoadStatus.state === 'error' ? 'text-[var(--color-danger)]' : reviewLoadStatus.state === 'complete' ? 'text-emerald-700' : 'text-[var(--color-text-secondary)]'}`}>
-                    {reviewLoadStatus.state === 'loading' && <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
-                    {reviewLoadStatus.state === 'complete' && <span aria-hidden>✓</span>}
-                    {reviewLoadStatus.message}
-                  </div>
-                )}
               </div>
             </div>
             <button
@@ -137,7 +80,7 @@ export function ContentTab({
               }}
               className="flex-shrink-0 self-start text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             >
-              {selectedBusinessId ? 'Change' : 'Choose'}
+              Change
             </button>
 
             {pickerOpen && (
@@ -158,22 +101,20 @@ export function ContentTab({
                     />
                   </div>
                   <div className="editor-scroll max-h-64 overflow-y-auto p-1.5">
-                    {isSearching && <div className="p-4 text-center text-sm text-[var(--color-text-secondary)]">Searching Google Maps…</div>}
-                    {visibleSearchError && <div className="p-4 text-center text-sm text-[var(--color-danger)]">{visibleSearchError}</div>}
-                    {!isSearching && !visibleSearchError && displayedBusinesses.length === 0 && (
+                    {filteredBusinesses.length === 0 && (
                       <div className="p-4 text-center text-sm text-[var(--color-text-secondary)]">
                         {businesses.length === 0
-                          ? 'Type at least 3 characters to search Google Maps.'
-                          : q.length < 3 ? 'No saved businesses match your search.' : 'No Google Maps businesses found.'}
+                          ? 'No businesses found in Supabase.'
+                          : 'No businesses match your search.'}
                       </div>
                     )}
-                    {displayedBusinesses.map((b) => (
+                    {filteredBusinesses.map((b) => (
                       <button
                         key={b.id}
                         type="button"
-                        onClick={async () => {
+                        onClick={() => {
+                          onSelectBusiness?.(b.id);
                           setPickerOpen(false);
-                          await onSelectBusiness?.(b);
                         }}
                         className={`flex w-full items-center justify-between gap-2 rounded-lg p-3 text-left transition-colors hover:bg-[var(--color-bg-hover)] ${b.id === selectedBusinessId ? 'bg-[var(--color-bg-hover)]' : ''
                           }`}

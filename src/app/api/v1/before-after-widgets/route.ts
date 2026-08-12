@@ -22,14 +22,8 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    const migrationMissing = error.message.includes("'auto_slide' column");
     return NextResponse.json(
-      {
-        error: 'Create failed',
-        message: migrationMissing
-          ? 'Database migration 015_before_after_auto_slide.sql has not been applied.'
-          : error.message,
-      },
+      { error: 'Create failed', message: error.message },
       { status: 500 }
     );
   }

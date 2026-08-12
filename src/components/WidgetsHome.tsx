@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { beforeAfterToDbRow, defaultBeforeAfterConfig } from '@/lib/before-after-config';
 import type { WidgetConfig } from '@/lib/widget-config';
-import { configToDbRow } from '@/lib/widget-config';
+import { configToDbRow, defaultWidgetConfig } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { Button, Input, Modal } from '@/components/ui';
 import { showConfirm } from '@/components/ui/ConfirmDialog';
@@ -344,10 +344,6 @@ function WidgetCard({
 }) {
   const router = useRouter();
 
-  useEffect(() => {
-    router.prefetch(editHref);
-  }, [editHref, router]);
-
   return (
     <div className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-3 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]">
       {/* Preview with hover actions */}
@@ -529,18 +525,23 @@ interface DeleteTarget {
   name: string;
 }
 
-export function WidgetsHome() {
+export function WidgetsHome({
+  beforeAfterItems: initialBeforeAfter,
+  googleReviewsItems: initialGoogleReviews,
+  carouselItems: initialCarousel,
+}: {
+  beforeAfterItems: BeforeAfterItem[];
+  googleReviewsItems: GoogleReviewsItem[];
+  carouselItems: GoogleReviewsItem[];
+}) {
   const router = useRouter();
   const [openType, setOpenType] = useState<WidgetTypeKey | null>(null);
   const [embedTarget, setEmbedTarget] = useState<EmbedTarget | null>(null);
   const [search, setSearch] = useState('');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const [beforeAfterItems, setBeforeAfterItems] = useState<BeforeAfterItem[]>([]);
-  const [googleReviewsItems, setGoogleReviewsItems] = useState<GoogleReviewsItem[]>([]);
-  const [carouselItems, setCarouselItems] = useState<GoogleReviewsItem[]>([]);
-  const [loadedTypes, setLoadedTypes] = useState<Set<WidgetTypeKey>>(() => new Set());
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState('');
+  const [beforeAfterItems, setBeforeAfterItems] = useState(initialBeforeAfter);
+  const [googleReviewsItems, setGoogleReviewsItems] = useState(initialGoogleReviews);
+  const [carouselItems, setCarouselItems] = useState(initialCarousel);
   const [busy, setBusy] = useState(false);
 
   // Re-entrancy guard: the kit ConfirmDialog closes imperatively, so its
@@ -558,28 +559,9 @@ export function WidgetsHome() {
     setEmbedTarget(null);
   };
 
-  const openModal = async (type: WidgetTypeKey) => {
+  const openModal = (type: WidgetTypeKey) => {
     setOpenType(type);
     setVisibleCount(ITEMS_PER_PAGE);
-    setListError('');
-    if (loadedTypes.has(type)) return;
-    setListLoading(true);
-    try {
-      const response = await fetch(`/api/v1/widget-lists?type=${type}`);
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? 'Could not load widgets');
-      if (type === 'before-after') {
-        setBeforeAfterItems(payload.items);
-      } else {
-        if (type === 'google-reviews') setGoogleReviewsItems(payload.items);
-        else setCarouselItems(payload.items);
-      }
-      setLoadedTypes((current) => new Set(current).add(type));
-    } catch (error) {
-      setListError(error instanceof Error ? error.message : 'Could not load widgets');
-    } finally {
-      setListLoading(false);
-    }
   };
 
   const handleSearchChange = (value: string) => {
@@ -686,11 +668,8 @@ export function WidgetsHome() {
 
   // --- Google Reviews (badge + carousel) mutations -----------------------------
 
-  const createGoogleReviews = (type: 'google-reviews' | 'google-reviews-carousel') => {
-    close();
-    router.push(`/widgets/${type}?new=1`);
+  const createGoogleReviews = async (type: 'google-reviews' | 'google-reviews-carousel') => {
     // A widget needs a business — reuse the one from any existing widget.
-    /*
     const source = googleReviewsItems[0] ?? carouselItems[0];
     if (!source) {
       showToast('No business found. Add a business in Supabase first.', 'error');
@@ -718,7 +697,6 @@ export function WidgetsHome() {
       showToast(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
       setBusy(false);
     }
-    */
   };
 
   const duplicateGoogleReviewsItem = async (
@@ -916,7 +894,7 @@ export function WidgetsHome() {
         open={!!openType}
         onClose={close}
         title={openType ? widgetTypeMeta[openType].modalTitle : undefined}
-        description={listLoading ? 'Loading widgets…' : `${openCount} embeds found`}
+        description={`${openCount} embeds found`}
         size="xl"
         showClose
       >
@@ -955,14 +933,7 @@ export function WidgetsHome() {
         </div>
 
         {/* Grid */}
-        {listLoading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-[var(--color-text-secondary)]">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
-            Searching for widgets…
-          </div>
-        ) : listError ? (
-          <div className="py-16 text-center text-sm text-[var(--color-danger)]">{listError}</div>
-        ) : openCount === 0 ? (
+        {openCount === 0 ? (
           <div className="py-16 text-center text-sm text-[var(--color-text-secondary)]">
             No embeds found.
           </div>
