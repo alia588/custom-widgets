@@ -67,6 +67,7 @@ export default async function GoogleReviewsCarouselPage({
 
   return (
     <CarouselEditor
+      key={newWidget === '1' ? 'new' : id}
       items={items}
       initialSelectedId={newWidget === '1' ? 'new' : id}
       isNew={newWidget === '1'}
