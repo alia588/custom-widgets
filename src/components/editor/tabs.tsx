@@ -362,7 +362,15 @@ export function StyleTab({ config, update }: TabProps) {
 
       <Section title="Call to Action">
         <Card>
-          <div className="grid grid-cols-2 gap-4">
+          <Toggle checked={config.ctaEnabled} onChange={(v) => update('ctaEnabled', v)} label="Enable CTA" />
+          {config.ctaEnabled && (
+            <div className="mt-3">
+              <Field label="Text">
+                <TextInput value={config.ctaText} onChange={(v) => update('ctaText', v)} />
+              </Field>
+            </div>
+          )}
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <ColorField label="Background" value={config.ctaBackgroundColor} onChange={(v) => update('ctaBackgroundColor', v)} />
             <ColorField label="Text Color" value={config.ctaTextColor} onChange={(v) => update('ctaTextColor', v)} />
           </div>
@@ -430,18 +438,6 @@ export function LayoutTab({ config, update }: TabProps) {
         </Card>
       </Section>
 
-      <Section title="Call to Action">
-        <Card>
-          <Toggle checked={config.ctaEnabled} onChange={(v) => update('ctaEnabled', v)} label="Enable CTA" />
-          {config.ctaEnabled && (
-            <div className="mt-3">
-              <Field label="Text">
-                <TextInput value={config.ctaText} onChange={(v) => update('ctaText', v)} />
-              </Field>
-            </div>
-          )}
-        </Card>
-      </Section>
     </>
   );
 }

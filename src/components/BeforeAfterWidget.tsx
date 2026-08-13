@@ -87,28 +87,78 @@ export function BeforeAfterWidget({
   compact?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState(config.autoSlide ? 25 : config.sliderPosition);
+  const animationStart = config.sliderPosition >= 50 ? 75 : 25;
+  const animationEnd = animationStart === 75 ? 25 : 75;
+  const [position, setPosition] = useState(config.sliderPosition);
+  const [isAutoAnimating, setIsAutoAnimating] = useState(false);
+  const [animationStarted, setAnimationStarted] = useState(false);
   const draggingRef = useRef(false);
+  const animationRunRef = useRef(0);
+  const hasPlayedRef = useRef(false);
 
   useEffect(() => {
     if (!config.autoSlide) {
-      return;
+      const reset = window.setTimeout(() => {
+        setPosition(config.sliderPosition);
+        setIsAutoAnimating(false);
+        setAnimationStarted(false);
+        hasPlayedRef.current = false;
+      }, 0);
+      return () => window.clearTimeout(reset);
     }
 
-    let atRight = false;
-    const start = window.setTimeout(() => {
-      atRight = true;
-      setPosition(75);
-    }, 3000);
-    const interval = window.setInterval(() => {
-      atRight = !atRight;
-      setPosition(atRight ? 75 : 25);
-    }, 6000);
-    return () => {
-      window.clearTimeout(start);
-      window.clearInterval(interval);
+    const element = containerRef.current;
+    if (!element || hasPlayedRef.current) return;
+
+    const startAnimation = () => {
+      if (hasPlayedRef.current) return;
+      hasPlayedRef.current = true;
+      setAnimationStarted(true);
     };
+
+    if (!('IntersectionObserver' in window)) {
+      const fallback = globalThis.setTimeout(startAnimation, 0);
+      return () => globalThis.clearTimeout(fallback);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startAnimation();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
   }, [config.autoSlide, config.sliderPosition]);
+
+  useEffect(() => {
+    if (!config.autoSlide || !animationStarted) return;
+
+    const run = ++animationRunRef.current;
+    const begin = window.setTimeout(() => {
+      if (animationRunRef.current !== run) return;
+      setIsAutoAnimating(true);
+      setPosition(animationStart);
+    }, 0);
+    const outward = window.setTimeout(() => {
+      if (animationRunRef.current === run) setPosition(animationEnd);
+    }, 100);
+    const returnTrip = window.setTimeout(() => {
+      if (animationRunRef.current === run) setPosition(animationStart);
+    }, 3100);
+    const finish = window.setTimeout(() => {
+      if (animationRunRef.current === run) setIsAutoAnimating(false);
+    }, 6100);
+    return () => {
+      window.clearTimeout(begin);
+      window.clearTimeout(outward);
+      window.clearTimeout(returnTrip);
+      window.clearTimeout(finish);
+    };
+  }, [animationEnd, animationStart, animationStarted, config.autoSlide, config.sliderPosition]);
 
   const clamp = (v: number) => Math.min(100, Math.max(0, v));
 
@@ -131,6 +181,8 @@ export function BeforeAfterWidget({
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Tap/drag anywhere on the image moves the slider. With capture touch
     // mode off, vertical touch scrolling still works (touch-action: pan-y).
+    animationRunRef.current += 1;
+    setIsAutoAnimating(false);
     startDrag(e.clientX);
     try {
       // Synthetic/test pointer events may lack an active pointer id.
@@ -222,7 +274,7 @@ export function BeforeAfterWidget({
             position: 'absolute',
             inset: 0,
             clipPath: `inset(0 ${100 - position}% 0 0)`,
-            transition: config.autoSlide ? 'clip-path 3s linear' : undefined,
+            transition: isAutoAnimating ? 'clip-path 3s ease-in-out' : undefined,
             zIndex: 1,
           }}
         >
@@ -241,7 +293,7 @@ export function BeforeAfterWidget({
             background: '#FFFFFF',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: config.autoSlide ? 'left 3s linear' : undefined,
+            transition: isAutoAnimating ? 'left 3s ease-in-out' : undefined,
           }}
         />
         <div
@@ -260,7 +312,7 @@ export function BeforeAfterWidget({
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: config.autoSlide ? 'left 3s linear' : undefined,
+            transition: isAutoAnimating ? 'left 3s ease-in-out' : undefined,
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2.5">

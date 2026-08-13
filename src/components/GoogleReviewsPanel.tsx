@@ -6,7 +6,7 @@ import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
 import { GoogleLogo } from './GoogleReviewsWidget';
-import { ReviewLightbox } from './ReviewLightbox';
+import { ReviewLightbox, ReviewPhoto } from './ReviewLightbox';
 
 function Avatar({
   name,
@@ -165,12 +165,19 @@ export function GoogleReviewsPanel({
   reviews = [],
 }: GoogleReviewsPanelProps) {
   const [visibleCount, setVisibleCount] = useState(config.drawerReviewsPerPage);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setVisibleCount(config.drawerReviewsPerPage);
+      const resetVisibleCount = window.setTimeout(
+        () => setVisibleCount(config.drawerReviewsPerPage),
+        0
+      );
+      return () => {
+        window.clearTimeout(resetVisibleCount);
+        document.body.style.overflow = '';
+      };
     } else {
       document.body.style.overflow = '';
     }
@@ -251,7 +258,7 @@ export function GoogleReviewsPanel({
 
   return (
     <>
-      {lightbox && <ReviewLightbox src={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <ReviewLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox(null)} />}
 
       {isOpen && (
         <div
@@ -470,21 +477,12 @@ export function GoogleReviewsPanel({
                       {config.drawerShowReviewImages && (review.images?.length ?? 0) > 0 && (
                         <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           {review.images!.map((src, i) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <ReviewPhoto
                               key={i}
                               src={googlePhotoVariant(src, reviewImageSize * 2)}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                              onClick={() => setLightbox(src)}
-                              style={{
-                                width: `${reviewImageSize}px`,
-                                height: `${reviewImageSize}px`,
-                                borderRadius: '8px',
-                                objectFit: 'cover',
-                                cursor: 'zoom-in',
-                              }}
+                              size={reviewImageSize}
+                              borderRadius={8}
+                              onClick={() => setLightbox({ images: review.images!, index: i })}
                             />
                           ))}
                         </div>
