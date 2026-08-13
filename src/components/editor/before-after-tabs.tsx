@@ -382,8 +382,8 @@ export function SettingsTab({ config, update }: BeforeAfterTabProps) {
         <Toggle
           checked={config.autoSlide}
           onChange={(v) => update('autoSlide', v)}
-          label="Move Automatically"
-          description="Moves between 25% and 75% in 3 seconds, pausing for 3 seconds at each end"
+          label="Play One Animation Cycle"
+          description="Makes one 25%–75% round trip, then stays at the starting side until dragged"
         />
       </Card>
     </Section>

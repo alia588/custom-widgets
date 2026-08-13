@@ -6,7 +6,7 @@ import type { WidgetConfig } from '@/lib/widget-config';
 import { resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
 import { GoogleLogo } from './GoogleReviewsWidget';
-import { ReviewLightbox } from './ReviewLightbox';
+import { ReviewLightbox, ReviewPhoto } from './ReviewLightbox';
 
 function Star({ size, color, filled }: { size: number; color: string; filled: boolean }) {
   return (
@@ -50,7 +50,7 @@ export function GoogleReviewsCarousel({
   disableResponsive?: boolean;
 }) {
   const [page, setPage] = useState(0);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [viewportWidth, setViewportWidth] = useState<number | null>(null);
@@ -266,21 +266,12 @@ export function GoogleReviewsCarousel({
       {config.drawerShowReviewImages && (review.images?.length ?? 0) > 0 && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {review.images!.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <ReviewPhoto
               key={i}
               src={googlePhotoVariant(src, avatarSize * 2)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              onClick={() => setLightbox(src)}
-              style={{
-                width: `${avatarSize}px`,
-                height: `${avatarSize}px`,
-                borderRadius: '6px',
-                objectFit: 'cover',
-                cursor: 'zoom-in',
-              }}
+              size={avatarSize}
+              borderRadius={6}
+              onClick={() => setLightbox({ images: review.images!, index: i })}
             />
           ))}
         </div>
@@ -332,7 +323,7 @@ export function GoogleReviewsCarousel({
         .cw-carousel-text::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.3); border-radius: 9999px; }
       `}</style>
 
-      {lightbox && <ReviewLightbox src={lightbox} onClose={() => setLightbox(null)} />}
+      {lightbox && <ReviewLightbox images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox(null)} />}
 
       {/* Header */}
       {(config.drawerShowBusinessInfo || config.carouselShowOverallRating) && business && (

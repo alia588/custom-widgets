@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
+import { SettingsIcon } from '@/components/SettingsIcon';
 
 export interface EditorTabDef {
   id: string;
@@ -87,7 +88,7 @@ export function EditorShell({
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
               )}
             >
-              {t.icon}
+              {t.id === 'settings' ? <SettingsIcon className="h-5 w-5" /> : t.icon}
               {t.label}
             </button>
           ))}
