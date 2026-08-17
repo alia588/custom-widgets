@@ -270,7 +270,12 @@ export function GoogleReviewsWidget({
                 </div>
               </div>
               {subtitleEl}
-              {config.ctaEnabled && <div style={styles.cta}><GoogleLogo size={config.badgeCompactMode ? 13 : 15} />{config.ctaText}</div>}
+              {config.ctaEnabled && (
+                <div style={styles.cta}>
+                  {config.ctaShowGoogleLogo && <GoogleLogo size={config.badgeCompactMode ? 13 : 15} />}
+                  {config.ctaText}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -290,7 +295,10 @@ export function GoogleReviewsWidget({
               </div>
               {subtitleEl}
               {config.ctaEnabled && (
-                <div style={styles.cta}><GoogleLogo size={config.badgeCompactMode ? 13 : 15} />{config.ctaText}</div>
+                <div style={styles.cta}>
+                  {config.ctaShowGoogleLogo && <GoogleLogo size={config.badgeCompactMode ? 13 : 15} />}
+                  {config.ctaText}
+                </div>
               )}
             </>
           )}

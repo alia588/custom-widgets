@@ -44,6 +44,7 @@ export interface WidgetConfig {
   googleIconSize: number;
 
   // Style — CTA
+  ctaShowGoogleLogo: boolean;
   ctaBackgroundColor: string;
   ctaTextColor: string;
 
@@ -117,6 +118,7 @@ export const defaultWidgetConfig: WidgetConfig = {
   starSize: 24,
   googleIconSize: 24,
 
+  ctaShowGoogleLogo: true,
   ctaBackgroundColor: '#FFFFFF',
   ctaTextColor: '#1F2937',
 
@@ -187,8 +189,9 @@ export function configFromDbRow(row: Record<string, any>): WidgetConfig {
     borderRadius: row.border_radius ?? 15,
     padding: row.padding ?? 12,
     starSize: row.star_size ?? 24,
-    googleIconSize: row.google_icon_size ?? 24,
+  googleIconSize: row.google_icon_size ?? 24,
 
+    ctaShowGoogleLogo: row.cta_show_google_logo ?? true,
     ctaBackgroundColor: row.cta_background_color ?? '#FFFFFF',
     ctaTextColor: row.cta_text_color ?? '#1F2937',
 
@@ -256,6 +259,7 @@ export function configToDbRow(config: WidgetConfig): Record<string, unknown> {
     star_size: config.starSize,
     google_icon_size: config.googleIconSize,
 
+    cta_show_google_logo: config.ctaShowGoogleLogo,
     cta_background_color: config.ctaBackgroundColor,
     cta_text_color: config.ctaTextColor,
 
