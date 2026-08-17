@@ -2,6 +2,7 @@
 
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
+import { reviewComparator } from '@/lib/review-sort';
 
 import type { WidgetConfig } from '@/lib/widget-config';
 import { defaultWidgetConfig, resolveFontFamily, thumbnailSizePx, googlePhotoVariant } from '@/lib/widget-config';
@@ -211,15 +212,7 @@ export function GoogleReviewsPanel({
         if (config.imageFiltering === 'no_images') return (r.images?.length ?? 0) === 0;
         return true;
       })
-      .sort((a, b) => {
-        if (config.imageFiltering === 'images_first') {
-          const imgDiff = (b.images?.length ?? 0) - (a.images?.length ?? 0);
-          if (imgDiff !== 0) return imgDiff;
-        }
-        if (config.sortBy === 'highest_rating') return b.rating - a.rating;
-        if (config.sortBy === 'lowest_rating') return a.rating - b.rating;
-        return 0;
-      })
+      .sort(reviewComparator(config))
       .slice(0, config.maxReviews);
   }, [reviews, config.minRating, config.excludedReviewIds, config.imageFiltering, config.sortBy, config.maxReviews]);
 
