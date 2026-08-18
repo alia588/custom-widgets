@@ -368,6 +368,11 @@ export function StyleTab({ config, update }: TabProps) {
               <Field label="Text">
                 <TextInput value={config.ctaText} onChange={(v) => update('ctaText', v)} />
               </Field>
+              <Toggle
+                checked={config.ctaShowGoogleLogo}
+                onChange={(v) => update('ctaShowGoogleLogo', v)}
+                label="Show Google logo"
+              />
             </div>
           )}
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">

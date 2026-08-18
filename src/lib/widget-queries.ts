@@ -7,6 +7,7 @@ export const WIDGET_SELECT = `id, business_id, widget_type, name, created_at, up
  custom_business_name_enabled, custom_business_name,
  use_site_theme, badge_background_type, badge_background_color, badge_border_color,
  star_color, text_color, font_family, border_radius, padding, star_size, google_icon_size,
+ cta_show_google_logo,
  cta_background_color, cta_text_color,
  drawer_background_color, drawer_text_color, drawer_card_background_color,
  drawer_card_border_color, drawer_card_radius,
