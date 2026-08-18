@@ -20,7 +20,8 @@ export function relativeTimeToMs(relativeTime: string): number {
   const text = (relativeTime ?? '').trim().toLowerCase();
   if (!text) return Number.MAX_SAFE_INTEGER;
 
-  const match = text.match(/^(?:(\d+)|a|an)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/);
+  // Google prefixes edited reviews: "Edited 7 years ago".
+  const match = text.match(/^(?:edited\s+)?(?:(\d+)|a|an)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/);
   if (match) {
     const n = match[1] ? parseInt(match[1], 10) : 1;
     return n * UNIT_MS[match[2]];
