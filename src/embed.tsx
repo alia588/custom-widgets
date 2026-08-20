@@ -6,6 +6,7 @@ import {
 } from './widget-registry';
 import {
   getBeforeAfterWidget,
+  getFormWidget,
   getWidgetConfig,
   getWidgetReviews,
 } from './lib/prefetch';
@@ -66,6 +67,11 @@ function prefetchWidgetData(widgetId: string) {
 
   if (kind === 'before-after') {
     getBeforeAfterWidget(widgetId, SCRIPT_ORIGIN).catch(() => {});
+    return;
+  }
+
+  if (kind === 'form') {
+    getFormWidget(widgetId, SCRIPT_ORIGIN).catch(() => {});
     return;
   }
 

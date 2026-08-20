@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { requireAdmin } from '@/lib/require-admin';
 import { beforeAfterFromDbRow } from '@/lib/before-after-config';
+import { formFromDbRow } from '@/lib/form-config';
 import { configFromDbRow } from '@/lib/widget-config';
 
 export async function GET(request: Request) {
@@ -34,6 +35,25 @@ export async function GET(request: Request) {
         id: row.id,
         name: row.name,
         config: beforeAfterFromDbRow(row),
+      })),
+      hasMore: (data?.length ?? 0) > pageSize,
+    });
+  }
+
+  if (type === 'form') {
+    let query = supabase
+      .from('form_widgets')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (safeSearch) query = query.or(searchFilter);
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      items: (data ?? []).slice(0, pageSize).map((row) => ({
+        id: row.id,
+        name: row.name,
+        config: formFromDbRow(row),
       })),
       hasMore: (data?.length ?? 0) > pageSize,
     });

@@ -69,3 +69,14 @@ export function getBeforeAfterWidget(
     return res.json() as Promise<Record<string, unknown>>;
   });
 }
+
+export function getFormWidget(
+  widgetId: string,
+  apiOrigin: string
+): Promise<Record<string, unknown>> {
+  return dedupe(`${apiOrigin}/api/v1/form-widgets/${widgetId}`, async () => {
+    const res = await fetch(`${apiOrigin}/api/v1/form-widgets/${widgetId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<Record<string, unknown>>;
+  });
+}

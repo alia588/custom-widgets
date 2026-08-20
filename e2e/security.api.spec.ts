@@ -40,6 +40,13 @@ test.describe('auth + security API', () => {
     const body = await res.text();
     expect(body.length).toBeGreaterThan(1000);
     expect(res.headers()['content-type']).toMatch(/javascript/);
+
+    for (const legacyHash of ['ae8df6f21595663e', 'cb1d7a5b739d2865']) {
+      const legacy = await request.get(`/widget.${legacyHash}.js`);
+      expect(legacy.status()).toBe(200);
+      expect(legacy.headers()['content-type']).toMatch(/javascript/);
+      expect(await legacy.text()).toBe(body);
+    }
   });
 
   test('widget GET enforces origin allowlist', async ({ request }) => {

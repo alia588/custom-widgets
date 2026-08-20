@@ -36,7 +36,20 @@ function isPublicEmbedDataApi(pathname: string, method: string): boolean {
   return (
     /^\/api\/v1\/widgets\/[^/]+$/.test(pathname) ||
     /^\/api\/v1\/widgets\/[^/]+\/reviews$/.test(pathname) ||
-    /^\/api\/v1\/before-after-widgets\/[^/]+$/.test(pathname)
+    /^\/api\/v1\/before-after-widgets\/[^/]+$/.test(pathname) ||
+    /^\/api\/v1\/form-widgets\/[^/]+$/.test(pathname) ||
+    /^\/api\/forms\/[^/]+\/submit$/.test(pathname)
+  );
+}
+
+/**
+ * Public form-submission intake (POST only). Origin allowlist and rate
+ * limiting are enforced inside the route.
+ */
+function isPublicFormSubmit(pathname: string, method: string): boolean {
+  return (
+    method.toUpperCase() === 'POST' &&
+    /^\/api\/forms\/[^/]+\/submit$/.test(pathname)
   );
 }
 
@@ -75,6 +88,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/login' ||
     isPublicEmbedPath(pathname) ||
     isPublicEmbedDataApi(pathname, method) ||
+    isPublicFormSubmit(pathname, method) ||
     isPublicAlertPath(pathname, method) ||
     isE2eHarnessPath(pathname)
   ) {
