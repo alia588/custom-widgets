@@ -65,8 +65,8 @@ export async function GET(
     });
   }
 
-  // Query both tables in parallel and use whichever hits (spec amendment 9).
-  const [widgetResult, beforeAfterResult] = await Promise.all([
+  // Query all tables in parallel and use whichever hits (spec amendment 9).
+  const [widgetResult, beforeAfterResult, formResult] = await Promise.all([
     supabase
       .from('widgets')
       .select(WIDGET_SELECT_WITH_REVIEWS)
@@ -74,6 +74,11 @@ export async function GET(
       .maybeSingle(),
     supabase
       .from('before_after_widgets')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle(),
+    supabase
+      .from('form_widgets')
       .select('*')
       .eq('id', id)
       .maybeSingle(),
@@ -95,6 +100,8 @@ export async function GET(
     };
   } else if (!beforeAfterResult.error && beforeAfterResult.data) {
     payload = { kind: 'before-after', config: beforeAfterResult.data };
+  } else if (!formResult.error && formResult.data) {
+    payload = { kind: 'form', config: formResult.data };
   } else {
     return new NextResponse('Widget not found', {
       status: 404,

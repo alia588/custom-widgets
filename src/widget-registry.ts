@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { GoogleReviewsEmbed } from './components/GoogleReviewsEmbed';
 import { GoogleReviewsCarouselEmbed } from './components/GoogleReviewsCarouselEmbed';
 import { BeforeAfterEmbed } from './components/BeforeAfterEmbed';
+import { FormEmbed } from './components/FormEmbed';
 import type { BootstrapData } from './lib/bootstrap';
 
 export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: string }>;
@@ -20,7 +21,7 @@ export type WidgetComponent = ComponentType<{ widgetId: string; apiOrigin?: stri
  * carry bootstrap data, from which their component is resolved at runtime, so
  * newly created widgets work immediately without a code deploy.
  */
-export type WidgetKind = 'reviews' | 'carousel' | 'before-after';
+export type WidgetKind = 'reviews' | 'carousel' | 'before-after' | 'form';
 
 interface RegistryEntry {
   kind: WidgetKind;
@@ -70,6 +71,7 @@ export function getWidgetKind(widgetId: string): WidgetKind | null {
 
 export function getBootstrappedWidgetKind(data: BootstrapData): WidgetKind {
   if (data.kind === 'before-after') return 'before-after';
+  if (data.kind === 'form') return 'form';
   return data.config.widget_type === 'google_reviews_carousel'
     ? 'carousel'
     : 'reviews';
@@ -79,6 +81,8 @@ export function getBootstrappedWidgetComponent(data: BootstrapData): WidgetCompo
   switch (getBootstrappedWidgetKind(data)) {
     case 'before-after':
       return BeforeAfterEmbed as WidgetComponent;
+    case 'form':
+      return FormEmbed as WidgetComponent;
     case 'carousel':
       return GoogleReviewsCarouselEmbed as WidgetComponent;
     default:

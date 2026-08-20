@@ -4,6 +4,8 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
 import { beforeAfterToDbRow, defaultBeforeAfterConfig } from '@/lib/before-after-config';
+import type { FormConfig } from '@/lib/form-config';
+import { formToDbRow, defaultFormConfig } from '@/lib/form-config';
 import type { WidgetConfig } from '@/lib/widget-config';
 import { configToDbRow } from '@/lib/widget-config';
 import type { BusinessInfo, Review } from '@/lib/reviews-data';
@@ -11,6 +13,7 @@ import { Button, Input, Modal } from '@/components/ui';
 import { showConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 import { BeforeAfterWidget } from './BeforeAfterWidget';
+import { FormWidget } from './FormWidget';
 import { GoogleReviewsWidget } from './GoogleReviewsWidget';
 import { GoogleReviewsCarousel } from './GoogleReviewsCarousel';
 
@@ -18,6 +21,12 @@ export interface BeforeAfterItem {
   id: string;
   name: string;
   config: BeforeAfterConfig;
+}
+
+export interface FormItem {
+  id: string;
+  name: string;
+  config: FormConfig;
 }
 
 export interface GoogleReviewsItem {
@@ -30,7 +39,7 @@ export interface GoogleReviewsItem {
   reviews?: Review[];
 }
 
-type WidgetTypeKey = 'before-after' | 'google-reviews' | 'google-reviews-carousel';
+type WidgetTypeKey = 'before-after' | 'form' | 'google-reviews' | 'google-reviews-carousel';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -62,6 +71,13 @@ const widgetTypeMeta: Record<
     description:
       'Showcase stunning before and after transformations with interactive drag sliders',
   },
+  form: {
+    name: 'Multi-Step Form',
+    modalTitle: 'Multi-Step Forms',
+    typeLabel: 'Multi-Step Form',
+    description:
+      'Capture leads and quote requests with fully customizable multi-step forms',
+  },
   'google-reviews': {
     name: 'Google Reviews Badge',
     modalTitle: 'Google Reviews Badges',
@@ -76,7 +92,7 @@ const widgetTypeMeta: Record<
   },
 };
 
-function buildEmbedCode(id: string, embedBundlePath: string) {
+function buildEmbedCode(id: string) {
   return [
     '<!-- BuiltByShah Widget Embed -->',
     `<div data-bbs-embed="${id}"></div>`,
@@ -85,7 +101,9 @@ function buildEmbedCode(id: string, embedBundlePath: string) {
     // bundle executes — that's what makes the first paint skip the skeleton
     // (see spec amendment 6).
     `<script src="${window.location.origin}/api/embeds/widget/${id}/data.js"></script>`,
-    `<script async src="${window.location.origin}${embedBundlePath}"></script>`,
+    // Always use the stable bundle URL. Hashed widget.<hash>.js URLs break
+    // (404) on client sites every time a new deployment replaces the build.
+    `<script async src="${window.location.origin}/api/embeds/widget.js"></script>`,
     '<!-- End BuiltByShah Widget Embed -->',
   ].join('\n');
 }
@@ -128,34 +146,7 @@ function EmbedCodeModal({
 }) {
   const [tab, setTab] = useState<'code' | 'howto'>('code');
   const [copied, setCopied] = useState(false);
-  const [embedBundlePath, setEmbedBundlePath] = useState('/api/embeds/widget.js');
-  const code = buildEmbedCode(id, embedBundlePath);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch('/widget-manifest.json', { cache: 'no-store' })
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return res.json() as Promise<{ file?: unknown }>;
-      })
-      .then((manifest) => {
-        if (
-          !cancelled &&
-          typeof manifest?.file === 'string' &&
-          /^widget\.[a-f0-9]{16}\.js$/.test(manifest.file)
-        ) {
-          setEmbedBundlePath(`/${manifest.file}`);
-        }
-      })
-      .catch(() => {
-        // The stable script path remains a safe fallback during local dev.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const code = buildEmbedCode(id);
 
   const copy = async () => {
     try {
@@ -540,6 +531,27 @@ function CarouselMock() {
   );
 }
 
+function FormMock() {
+  return (
+    <div className="flex h-full w-full flex-col gap-2 p-4">
+      <MockBar className="h-3 w-1/3" />
+      <MockBar className="h-2 w-2/3" />
+      <div className="mt-2 space-y-1.5">
+        <MockBar className="h-1.5 w-1/4" />
+        <MockBar className="h-3.5 w-full" />
+      </div>
+      <div className="space-y-1.5">
+        <MockBar className="h-1.5 w-1/4" />
+        <MockBar className="h-3.5 w-full" />
+      </div>
+      <div className="mt-auto flex gap-2">
+        <MockBar className="h-4 w-1/2" />
+        <MockBar className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Home + modal
 // ---------------------------------------------------------------------------
@@ -562,6 +574,7 @@ export function WidgetsHome() {
   const [embedTarget, setEmbedTarget] = useState<EmbedTarget | null>(null);
   const [search, setSearch] = useState('');
   const [beforeAfterItems, setBeforeAfterItems] = useState<BeforeAfterItem[]>([]);
+  const [formItems, setFormItems] = useState<FormItem[]>([]);
   const [googleReviewsItems, setGoogleReviewsItems] = useState<GoogleReviewsItem[]>([]);
   const [carouselItems, setCarouselItems] = useState<GoogleReviewsItem[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -586,9 +599,11 @@ export function WidgetsHome() {
     setEmbedTarget(null);
   };
 
-  const setItemsForType = useCallback((type: WidgetTypeKey, items: BeforeAfterItem[] | GoogleReviewsItem[], append: boolean) => {
+  const setItemsForType = useCallback((type: WidgetTypeKey, items: BeforeAfterItem[] | GoogleReviewsItem[] | FormItem[], append: boolean) => {
     if (type === 'before-after') {
       setBeforeAfterItems((current) => append ? [...current, ...(items as BeforeAfterItem[])] : items as BeforeAfterItem[]);
+    } else if (type === 'form') {
+      setFormItems((current) => append ? [...current, ...(items as FormItem[])] : items as FormItem[]);
     } else if (type === 'google-reviews') {
       setGoogleReviewsItems((current) => append ? [...current, ...(items as GoogleReviewsItem[])] : items as GoogleReviewsItem[]);
     } else {
@@ -685,13 +700,15 @@ export function WidgetsHome() {
     setBusy(true);
     try {
       const url =
-        deleteTarget.type === 'before-after'
-          ? `/api/v1/before-after-widgets/${deleteTarget.id}`
+        deleteTarget.type === 'before-after' || deleteTarget.type === 'form'
+          ? `/api/v1/${deleteTarget.type === 'form' ? 'form-widgets' : 'before-after-widgets'}/${deleteTarget.id}`
           : `/api/v1/widgets/${deleteTarget.id}`;
       const res = await fetch(url, { method: 'DELETE' });
       if (!res.ok) throw new Error(await res.text());
       if (deleteTarget.type === 'before-after') {
         setBeforeAfterItems((list) => list.filter((x) => x.id !== deleteTarget.id));
+      } else if (deleteTarget.type === 'form') {
+        setFormItems((list) => list.filter((x) => x.id !== deleteTarget.id));
       } else if (deleteTarget.type === 'google-reviews-carousel') {
         setCarouselItems((list) => list.filter((x) => x.id !== deleteTarget.id));
       } else {
@@ -731,6 +748,56 @@ export function WidgetsHome() {
       const row = await res.json();
       close();
       router.push(`/widgets/before-after?id=${row.id}`);
+    } catch (err) {
+      showToast(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
+      setBusy(false);
+    }
+  };
+
+  const duplicateForm = async (item: FormItem) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/v1/form-widgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${item.name} (Copy)`,
+          ...formToDbRow(item.config),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const row = await res.json();
+      setFormItems((list) => [
+        { id: row.id, name: row.name, config: item.config },
+        ...list,
+      ]);
+      router.refresh();
+      showToast(`“${item.name}” duplicated`, 'success');
+    } catch (err) {
+      showToast(`Duplicate failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
+    } finally {
+      actionInFlightRef.current = false;
+      setBusy(false);
+    }
+  };
+
+  const createForm = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/v1/form-widgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Multi-Step Form',
+          ...formToDbRow(defaultFormConfig),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const row = await res.json();
+      close();
+      router.push(`/widgets/form?id=${row.id}`);
     } catch (err) {
       showToast(`Create failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
       setBusy(false);
@@ -815,6 +882,7 @@ export function WidgetsHome() {
 
   const getFilteredItems = () => {
     if (openType === 'before-after') return beforeAfterItems.filter((i) => matches(i.id, i.name));
+    if (openType === 'form') return formItems.filter((i) => matches(i.id, i.name));
     if (openType === 'google-reviews') return googleReviewsItems.filter((i) => matches(i.id, i.name));
     if (openType === 'google-reviews-carousel') return carouselItems.filter((i) => matches(i.id, i.name));
     return [];
@@ -879,6 +947,22 @@ export function WidgetsHome() {
         </WidgetCard>
       ));
     }
+    if (openType === 'form') {
+      return (visibleItems as FormItem[]).map((item) => (
+        <WidgetCard
+          key={item.id}
+          name={item.name}
+          editHref={`/widgets/form?id=${item.id}`}
+          onCopyCode={() =>
+            setEmbedTarget({ id: item.id, name: item.name, typeLabel: widgetTypeMeta['form'].typeLabel })
+          }
+          onDuplicate={() => duplicateForm(item)}
+          onDelete={() => requestDelete({ type: 'form', id: item.id, name: item.name })}
+        >
+          <FormWidget config={item.config} compact />
+        </WidgetCard>
+      ));
+    }
     if (openType === 'google-reviews') {
       return (visibleItems as GoogleReviewsItem[]).map((item) =>
         renderGoogleReviewsCard(item, 'google-reviews')
@@ -913,6 +997,20 @@ export function WidgetsHome() {
         </span>
       ),
       mock: <BeforeAfterMock />,
+    },
+    {
+      key: 'form',
+      name: widgetTypeMeta['form'].name,
+      description: widgetTypeMeta['form'].description,
+      icon: (
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M8 8h8M8 12h8M8 16h5" />
+          </svg>
+        </span>
+      ),
+      mock: <FormMock />,
     },
     {
       key: 'google-reviews',
@@ -994,6 +1092,7 @@ export function WidgetsHome() {
             onClick={() => {
               if (!openType) return;
               if (openType === 'before-after') createBeforeAfter();
+              else if (openType === 'form') createForm();
               else createGoogleReviews(openType);
             }}
             disabled={busy}

@@ -5,22 +5,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(process.cwd()),
   },
-  async headers() {
+  async rewrites() {
     return [
       {
-        // The dashboard reads this to generate a cache-busted embed snippet.
-        source: '/widget-manifest.json',
-        headers: [
-          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
-        ],
-      },
-      {
-        // Only the build script can emit this path shape. Its content hash
-        // makes a one-year immutable cache safe, unlike legacy widget.js.
+        // Embed snippets generated before the stable-URL fix reference
+        // build-specific hashed bundles (widget.<hash>.js) that stop existing
+        // after the next redeploy, 404ing every widget on that client site.
+        // Rewrite any such request to the current bundle so old embed codes
+        // keep working forever. Rewrites run after the filesystem check, so a
+        // hashed file that does exist in public/ is still served directly.
         source: '/:bundle(widget\\.[a-f0-9]{16}\\.js)',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
+        destination: '/api/embeds/widget.js',
       },
     ];
   },

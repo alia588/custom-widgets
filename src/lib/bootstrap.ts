@@ -27,7 +27,13 @@ export interface BootstrapBeforeAfterData {
   config: Record<string, unknown>;
 }
 
-export type BootstrapData = BootstrapReviewsData | BootstrapBeforeAfterData;
+export interface BootstrapFormData {
+  kind: 'form';
+  /** Raw `form_widgets` table row (steps JSONB + scalar style columns). */
+  config: Record<string, unknown>;
+}
+
+export type BootstrapData = BootstrapReviewsData | BootstrapBeforeAfterData | BootstrapFormData;
 
 declare global {
   interface Window {
@@ -50,7 +56,7 @@ export function getBootstrappedData(widgetId: string): BootstrapData | null {
   if (!isRecord(raw)) return null;
 
   const { kind, config } = raw;
-  if (kind !== 'reviews' && kind !== 'before-after') return null;
+  if (kind !== 'reviews' && kind !== 'before-after' && kind !== 'form') return null;
   if (!isRecord(config)) return null;
 
   if (kind === 'reviews') {
