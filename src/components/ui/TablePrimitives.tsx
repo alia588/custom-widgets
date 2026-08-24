@@ -3,17 +3,17 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
 
-export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
+interface TablePrimitivesProps extends React.TableHTMLAttributes<HTMLTableElement> {
   /** Classes applied to the scroll container that wraps the table. */
   containerClassName?: string;
 }
 
-export function Table({
+export function TablePrimitive({
   className,
   containerClassName,
   children,
   ...props
-}: TableProps) {
+}: TablePrimitivesProps) {
   return (
     <div
       className={cn(
@@ -114,4 +114,4 @@ export function Td({
   );
 }
 
-export default Table;
+export default TablePrimitive;

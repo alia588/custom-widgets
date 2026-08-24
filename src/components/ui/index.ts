@@ -21,7 +21,6 @@ export type { CardProps } from './Card';
 export { default as MetricCard } from './MetricCard';
 export type { MetricCardProps, MetricCardTone } from './MetricCard';
 
-export { default as Table, Thead, Tbody, Tr, Th, Td } from './Table';
 export { default as InteractiveTable } from './InteractiveTable';
 export type {
   InteractiveTableColumn,

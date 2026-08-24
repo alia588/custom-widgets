@@ -1,5 +1,6 @@
 import Script from 'next/script';
 import { notFound } from 'next/navigation';
+import { InteractiveTablePreview } from '@/components/e2e/InteractiveTablePreview';
 import { GARYS_WIDGET_IDS } from '@/lib/e2e-widget-ids';
 
 /**
@@ -27,6 +28,8 @@ export default function E2eHarnessPage() {
         Same widget IDs as the Gary&apos;s embed test site — loads local{' '}
         <code>/api/embeds/widget.js</code>.
       </p>
+
+      <InteractiveTablePreview />
 
       <section style={{ marginTop: 32 }}>
         <h2>Google Reviews Badge</h2>

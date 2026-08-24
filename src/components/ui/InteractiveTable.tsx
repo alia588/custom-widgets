@@ -11,7 +11,7 @@ import {
   useState,
 } from 'react';
 import { cn } from '@/lib/utils/cn';
-import { Table, Tbody, Td, Th, Thead, Tr } from './Table';
+import { TablePrimitive, Tbody, Td, Th, Thead, Tr } from './TablePrimitives';
 
 export type TableSortDirection = 'ascending' | 'descending';
 export type TableSortType = 'string' | 'number' | 'date';
@@ -297,7 +297,7 @@ export function InteractiveTable<T>({
   );
 
   return (
-    <Table
+    <TablePrimitive
       aria-label={ariaLabel}
       containerClassName="max-h-[32rem] overflow-auto"
       className={cn('min-w-max table-fixed', className)}
@@ -388,7 +388,7 @@ export function InteractiveTable<T>({
           ))
         )}
       </Tbody>
-    </Table>
+    </TablePrimitive>
   );
 }
 
