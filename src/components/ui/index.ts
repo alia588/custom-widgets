@@ -22,6 +22,14 @@ export { default as MetricCard } from './MetricCard';
 export type { MetricCardProps, MetricCardTone } from './MetricCard';
 
 export { default as Table, Thead, Tbody, Tr, Th, Td } from './Table';
+export { default as InteractiveTable } from './InteractiveTable';
+export type {
+  InteractiveTableColumn,
+  InteractiveTableProps,
+  TableSortDirection,
+  TableSortType,
+  TableSortValue,
+} from './InteractiveTable';
 
 export { default as Badge } from './Badge';
 export type { BadgeProps, BadgeVariant, BadgeSize } from './Badge';

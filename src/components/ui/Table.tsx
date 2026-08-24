@@ -3,13 +3,24 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
 
+export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
+  /** Classes applied to the scroll container that wraps the table. */
+  containerClassName?: string;
+}
+
 export function Table({
   className,
+  containerClassName,
   children,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>) {
+}: TableProps) {
   return (
-    <div className="table-scroll-container w-full overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+    <div
+      className={cn(
+        'table-scroll-container w-full overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]',
+        containerClassName
+      )}
+    >
       <table
         className={cn('w-full border-collapse text-sm text-left', className)}
         {...props}

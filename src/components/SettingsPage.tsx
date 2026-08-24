@@ -1,7 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Button, Card, CardDescription, CardHeader, CardTitle, Input } from '@/components/ui';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  InteractiveTable,
+  type InteractiveTableColumn,
+} from '@/components/ui';
 import { showConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 
@@ -14,6 +23,10 @@ interface AllowedDomain {
 interface SettingsPageProps {
   initialDomains: AllowedDomain[];
 }
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'medium',
+});
 
 export function SettingsPage({ initialDomains }: SettingsPageProps) {
   const [domains, setDomains] = useState<AllowedDomain[]>(initialDomains);
@@ -55,17 +68,17 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
     }
   };
 
-  const startEdit = (domain: AllowedDomain) => {
+  const startEdit = useCallback((domain: AllowedDomain) => {
     setEditingId(domain.id);
     setEditValue(domain.domain);
-  };
+  }, []);
 
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setEditingId(null);
     setEditValue('');
-  };
+  }, []);
 
-  const handleUpdate = async (id: string) => {
+  const handleUpdate = useCallback(async (id: string) => {
     if (!editValue.trim()) return;
 
     setLoading(true);
@@ -91,9 +104,9 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [editValue]);
 
-  const doDelete = async (id: string) => {
+  const doDelete = useCallback(async (id: string) => {
     if (actionInFlightRef.current) return;
     actionInFlightRef.current = true;
     setLoading(true);
@@ -116,16 +129,94 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
       actionInFlightRef.current = false;
       setLoading(false);
     }
-  };
+  }, []);
 
-  const requestDelete = (domain: AllowedDomain) => {
+  const requestDelete = useCallback((domain: AllowedDomain) => {
     showConfirm(
       'Remove this domain?',
       `“${domain.domain}” will no longer be allowed to load widget embeds.`,
       () => doDelete(domain.id),
       { confirmText: 'Remove', cancelText: 'Cancel' }
     );
-  };
+  }, [doDelete]);
+
+  const columns = useMemo<InteractiveTableColumn<AllowedDomain>[]>(
+    () => [
+      {
+        id: 'domain',
+        header: 'Domain',
+        sortValue: (domain) => domain.domain,
+        defaultWidth: 360,
+        minWidth: 220,
+        cell: (domain) =>
+          editingId === domain.id ? (
+            <Input
+              type="text"
+              value={editValue}
+              onChange={(event) => setEditValue(event.target.value)}
+              disabled={loading}
+              aria-label={`Domain for ${domain.domain}`}
+            />
+          ) : (
+            <span className="block truncate font-medium text-[var(--color-text-primary)]">
+              {domain.domain}
+            </span>
+          ),
+      },
+      {
+        id: 'createdAt',
+        header: 'Added',
+        sortType: 'date',
+        sortValue: (domain) => domain.created_at,
+        defaultWidth: 160,
+        minWidth: 130,
+        cell: (domain) => (
+          <time className="whitespace-nowrap text-[var(--color-text-secondary)]" dateTime={domain.created_at}>
+            {dateFormatter.format(new Date(domain.created_at))}
+          </time>
+        ),
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        resizable: false,
+        sortable: false,
+        defaultWidth: 180,
+        minWidth: 180,
+        maxWidth: 180,
+        cell: (domain) =>
+          editingId === domain.id ? (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                size="sm"
+                onClick={() => handleUpdate(domain.id)}
+                disabled={loading || !editValue.trim()}
+              >
+                Save
+              </Button>
+              <Button size="sm" variant="outline" onClick={cancelEdit} disabled={loading}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => startEdit(domain)}>
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
+                onClick={() => requestDelete(domain)}
+              >
+                Delete
+              </Button>
+            </div>
+          ),
+      },
+    ],
+    [cancelEdit, editValue, editingId, handleUpdate, loading, requestDelete, startEdit]
+  );
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -155,62 +246,14 @@ export function SettingsPage({ initialDomains }: SettingsPageProps) {
           </Button>
         </form>
 
-        {domains.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            No domains allowed yet. When empty, all embed requests are blocked.
-          </p>
-        ) : (
-          <ul className="divide-y divide-[var(--color-border-light)]">
-            {domains.map((domain) => (
-              <li
-                key={domain.id}
-                className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-              >
-                {editingId === domain.id ? (
-                  <>
-                    <Input
-                      type="text"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      disabled={loading}
-                    />
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleUpdate(domain.id)}
-                        disabled={loading || !editValue.trim()}
-                      >
-                        Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit} disabled={loading}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
-                      {domain.domain}
-                    </span>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={() => startEdit(domain)}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
-                        onClick={() => requestDelete(domain)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <InteractiveTable
+          rows={domains}
+          columns={columns}
+          rowKey={(domain) => domain.id}
+          ariaLabel="Allowed domains"
+          initialSort={{ columnId: 'domain' }}
+          emptyState="No domains allowed yet. When empty, all embed requests are blocked."
+        />
       </Card>
     </div>
   );
