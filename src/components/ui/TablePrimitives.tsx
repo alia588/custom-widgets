@@ -3,13 +3,24 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
 
-export function Table({
+interface TablePrimitivesProps extends React.TableHTMLAttributes<HTMLTableElement> {
+  /** Classes applied to the scroll container that wraps the table. */
+  containerClassName?: string;
+}
+
+export function TablePrimitive({
   className,
+  containerClassName,
   children,
   ...props
-}: React.TableHTMLAttributes<HTMLTableElement>) {
+}: TablePrimitivesProps) {
   return (
-    <div className="table-scroll-container w-full overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+    <div
+      className={cn(
+        'table-scroll-container w-full overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]',
+        containerClassName
+      )}
+    >
       <table
         className={cn('w-full border-collapse text-sm text-left', className)}
         {...props}
@@ -103,4 +114,4 @@ export function Td({
   );
 }
 
-export default Table;
+export default TablePrimitive;
