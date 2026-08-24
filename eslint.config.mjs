@@ -20,6 +20,18 @@ const eslintConfig = defineConfig([
             "Use the public InteractiveTable component for all tabular UI. Raw table markup is reserved for its internal primitives.",
         },
       ],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/TablePrimitives"],
+              message:
+                "Table primitives are private implementation details. Import InteractiveTable from @/components/ui instead.",
+            },
+          ],
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.
