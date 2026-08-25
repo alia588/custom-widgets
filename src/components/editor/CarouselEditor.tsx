@@ -9,6 +9,7 @@ import { ScaledCarouselPreview } from '@/components/ScaledCarouselPreview';
 import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './carousel-tabs';
 import type { BusinessOption } from './tabs';
+import { reviewSyncStatus, type ReviewLoadStatus } from './review-sync-status';
 
 export interface CarouselEditorWidget {
   widgetId: string;
@@ -104,7 +105,7 @@ export function CarouselEditor({
   const [saved, setSaved] = useState(false);
   const [addedBusinesses, setAddedBusinesses] = useState<CarouselBusiness[]>([]);
   const [loadedReviews, setLoadedReviews] = useState<Record<string, Review[]>>({});
-  const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
+  const [reviewLoadStatus, setReviewLoadStatus] = useState<ReviewLoadStatus | null>(null);
   const [reviewFetching, setReviewFetching] = useState(false);
 
   const selected = items.find((i) => i.widgetId === selectedId);
@@ -208,10 +209,10 @@ export function CarouselEditor({
           averageRating: result.averageRating ?? business.averageRating,
           totalReviews: result.totalReviews ?? business.totalReviews,
         }, ...current.filter((item) => item.id !== businessId)]);
-        setReviewLoadStatus({
-          state: 'complete',
-          message: `${result.reviewsFetched ?? 0} latest reviews fetched · ${refreshedReviews.length} stored`,
-        });
+        setReviewLoadStatus(reviewSyncStatus({
+          ...result,
+          reviewsStored: refreshedReviews.length,
+        }));
       } catch (error) {
         setReviewLoadStatus({
           state: 'error',

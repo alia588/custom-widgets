@@ -12,6 +12,17 @@ export interface SyncResult {
   averageRating: number | null;
   widgetsUpdated: number;
   reviewsFetched: number;
+  targetReviews: number;
+  complete: boolean;
+  stopReason: string;
+  requestsMade: number;
+  pageDiagnostics: Array<{
+    page: number;
+    reviewCount: number;
+    attempts: number;
+    hasNextPageToken: boolean;
+    identifier: 'data_id' | 'place_id';
+  }>;
   reviews: ApiReview[];
   syncedAt: string;
 }
@@ -33,7 +44,7 @@ export async function syncBusinessReviews(
   // 1. Resolve the managed business
   const { data: business, error: businessError } = await supabase
     .from('businesses')
-    .select('id, name, place_id')
+    .select('id, name, place_id, scrapedo_data_id, total_reviews, average_rating')
     .eq('place_id', placeId)
     .single();
 
@@ -43,12 +54,32 @@ export async function syncBusinessReviews(
 
   // 2. Fetch from Scrape.do (paginated, up to 20 reviews per request).
   // Sync newest-first so a one-page refresh always captures the latest reviews.
-  const { reviews, place_info, fetchedPages } = await fetchAllScrapeDoReviews(
+  const {
+    reviews,
+    place_info,
+    dataId,
+    fetchedPages,
+    requestsMade,
+    targetReviews,
+    complete,
+    stopReason,
+    pageDiagnostics,
+  } = await fetchAllScrapeDoReviews(placeId, token, maxReviews, 'newest', {
+    dataId: business.scrapedo_data_id,
+    expectedReviewCount: business.total_reviews,
+  });
+
+  console.info('[reviews-sync] Scrape.do pagination completed', {
+    businessId: business.id,
     placeId,
-    token,
-    maxReviews,
-    'newest'
-  );
+    targetReviews,
+    reviewsFetched: reviews.length,
+    fetchedPages,
+    requestsMade,
+    complete,
+    stopReason,
+    pageDiagnostics,
+  });
 
   // 3. Upsert the fetched page. Never delete the existing snapshot: review IDs
   // are stable, so refreshes update known rows and insert only new ones.
@@ -99,31 +130,51 @@ export async function syncBusinessReviews(
   ];
 
   // 4. Update business figures from Google
-  const totalReviews = place_info?.reviews ?? null;
-  const averageRating = place_info?.rating ?? null;
+  const totalReviews = place_info?.reviews ?? business.total_reviews ?? null;
+  const averageRating = place_info?.rating ?? business.average_rating ?? null;
+  const syncedAt = new Date().toISOString();
 
-  await supabase
+  const { error: businessUpdateError } = await supabase
     .from('businesses')
     .update({
+      ...(dataId ? { scrapedo_data_id: dataId } : {}),
       total_reviews: totalReviews,
       average_rating: averageRating,
-      updated_at: new Date().toISOString(),
+      review_sync_status: complete ? 'complete' : 'partial',
+      review_sync_target: targetReviews,
+      review_sync_fetched: rows.length,
+      review_sync_stop_reason: stopReason,
+      review_sync_diagnostics: {
+        fetchedPages,
+        requestsMade,
+        pages: pageDiagnostics,
+      },
+      reviews_last_synced_at: syncedAt,
+      updated_at: syncedAt,
     })
     .eq('id', business.id);
+
+  if (businessUpdateError) {
+    throw new Error(`Business sync update failed: ${businessUpdateError.message}`);
+  }
 
   // 5. Snapshot into each widget's cached_reviews for the embed script
   // (both the badge and the carousel read from this cache)
   const cached = orderedStoredRows.map(mapReviewRow);
 
-  const { data: updatedWidgets } = await supabase
+  const { data: updatedWidgets, error: widgetUpdateError } = await supabase
     .from('widgets')
     .update({
       cached_reviews: cached,
-      last_synced_at: new Date().toISOString(),
+      last_synced_at: syncedAt,
     })
     .eq('business_id', business.id)
     .in('widget_type', ['google_reviews', 'google_reviews_carousel'])
     .select('id');
+
+  if (widgetUpdateError) {
+    throw new Error(`Widget review cache update failed: ${widgetUpdateError.message}`);
+  }
 
   return {
     businessId: business.id,
@@ -135,7 +186,12 @@ export async function syncBusinessReviews(
     averageRating,
     widgetsUpdated: updatedWidgets?.length ?? 0,
     reviewsFetched: rows.length,
+    targetReviews,
+    complete,
+    stopReason,
+    requestsMade,
+    pageDiagnostics,
     reviews: cached,
-    syncedAt: new Date().toISOString(),
+    syncedAt,
   };
 }
