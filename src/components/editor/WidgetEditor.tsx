@@ -9,6 +9,7 @@ import { GoogleReviewsWidget } from '@/components/GoogleReviewsWidget';
 import { EditorShell, type EditorTabDef, type EditorTabMeta } from './EditorShell';
 import { ContentTab, LayoutTab, SettingsTab, StyleTab } from './tabs';
 import type { BusinessOption } from './tabs';
+import { reviewSyncStatus, type ReviewLoadStatus } from './review-sync-status';
 
 export interface EditorWidget {
   widgetId: string;
@@ -92,7 +93,7 @@ export function WidgetEditor({
   const [saved, setSaved] = useState(false);
   const [newBusiness, setNewBusiness] = useState<(BusinessInfo & { id: string; placeId: string }) | null>(null);
   const [selectedReviews, setSelectedReviews] = useState<Review[] | null>(null);
-  const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
+  const [reviewLoadStatus, setReviewLoadStatus] = useState<ReviewLoadStatus | null>(null);
   const [reviewFetching, setReviewFetching] = useState(false);
 
   const selected = items.find((i) => i.widgetId === selectedId);
@@ -193,10 +194,10 @@ export function WidgetEditor({
           averageRating: result.averageRating ?? currentBusiness.averageRating,
           totalReviews: result.totalReviews ?? currentBusiness.totalReviews,
         });
-        setReviewLoadStatus({
-          state: 'complete',
-          message: `${result.reviewsFetched ?? 0} latest reviews fetched · ${refreshedReviews.length} stored`,
-        });
+        setReviewLoadStatus(reviewSyncStatus({
+          ...result,
+          reviewsStored: refreshedReviews.length,
+        }));
       } catch (error) {
         setReviewLoadStatus({
           state: 'error',

@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     return [{
       id: `google:${placeId}`,
       placeId,
+      dataId: typeof place.data_id === 'string' ? place.data_id : undefined,
       name: String(place.title),
       address: String(place.address ?? ''),
       averageRating: Number(place.rating ?? 0),

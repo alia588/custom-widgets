@@ -17,6 +17,7 @@ import {
 import { ExcludeReviewsPicker } from './ExcludeReviewsPicker';
 import { ReviewFetchButton } from './ReviewFetchButton';
 import type { BusinessOption } from './tabs';
+import type { ReviewLoadStatus } from './review-sync-status';
 
 export interface CarouselTabProps {
   config: WidgetConfig;
@@ -28,7 +29,7 @@ export interface CarouselTabProps {
   businesses?: BusinessOption[];
   selectedBusinessId?: string;
   onSelectBusiness?: (business: BusinessOption) => void | Promise<void>;
-  reviewLoadStatus?: { state: 'loading' | 'complete' | 'error'; message: string } | null;
+  reviewLoadStatus?: ReviewLoadStatus | null;
   hasReviews?: boolean;
   reviewFetching?: boolean;
   onFetchReviews?: () => void | Promise<void>;
@@ -118,9 +119,10 @@ export function ContentTab({
                 </div>
                 <div className="truncate text-xs text-[var(--color-text-secondary)]">{business?.address ?? ''}</div>
                 {reviewLoadStatus && (
-                  <div className={`mt-1 flex items-center gap-1.5 text-xs ${reviewLoadStatus.state === 'error' ? 'text-[var(--color-danger)]' : reviewLoadStatus.state === 'complete' ? 'text-emerald-700' : 'text-[var(--color-text-secondary)]'}`}>
+                  <div className={`mt-1 flex items-center gap-1.5 text-xs ${reviewLoadStatus.state === 'error' ? 'text-[var(--color-danger)]' : reviewLoadStatus.state === 'partial' ? 'text-amber-700' : reviewLoadStatus.state === 'complete' ? 'text-emerald-700' : 'text-[var(--color-text-secondary)]'}`}>
                     {reviewLoadStatus.state === 'loading' && <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
                     {reviewLoadStatus.state === 'complete' && <span aria-hidden>✓</span>}
+                    {reviewLoadStatus.state === 'partial' && <span aria-hidden>!</span>}
                     {reviewLoadStatus.message}
                   </div>
                 )}
