@@ -14,6 +14,7 @@ export interface CarouselEditorWidget {
   widgetId: string;
   widgetName: string;
   businessId: string;
+  placeId: string;
   initialConfig: WidgetConfig;
   business: BusinessInfo;
   reviews: Review[];
@@ -21,6 +22,7 @@ export interface CarouselEditorWidget {
 
 export interface CarouselBusiness extends BusinessInfo {
   id: string;
+  placeId: string;
 }
 
 type EditorTab = 'content' | 'style' | 'layout' | 'settings';
@@ -103,6 +105,7 @@ export function CarouselEditor({
   const [addedBusinesses, setAddedBusinesses] = useState<CarouselBusiness[]>([]);
   const [loadedReviews, setLoadedReviews] = useState<Record<string, Review[]>>({});
   const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
+  const [reviewFetching, setReviewFetching] = useState(false);
 
   const selected = items.find((i) => i.widgetId === selectedId);
 
@@ -121,6 +124,8 @@ export function CarouselEditor({
   const availableBusinesses = [...addedBusinesses, ...allBusinesses];
   const business = availableBusinesses.find((b) => b.id === businessId) ?? selected.business;
   const reviews = loadedReviews[businessId] ?? reviewsByBusiness[businessId] ?? selected.reviews;
+  const placeId = availableBusinesses.find((b) => b.id === businessId)?.placeId
+    ?? (businessId === selected.businessId ? selected.placeId : '');
 
   const update = <K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
     setConfigs((c) => ({ ...c, [selectedId]: { ...config, [key]: value } }));
@@ -173,30 +178,73 @@ export function CarouselEditor({
     business,
     reviews,
     reviewLoadStatus,
+    hasReviews: reviews.length > 0,
+    reviewFetching,
     businesses: [],
     selectedBusinessId: businessId,
+    onFetchReviews: async () => {
+      if (!placeId || reviewFetching) return;
+
+      setReviewFetching(true);
+      setReviewLoadStatus({ state: 'loading', message: 'Fetching up to the latest 500 reviews…' });
+      try {
+        const response = await fetch('/api/v1/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.message ?? result.error ?? 'Review fetch failed');
+        }
+
+        const refreshedReviews = (result.reviews ?? []) as Review[];
+        setLoadedReviews((current) => ({ ...current, [businessId]: refreshedReviews }));
+        setAddedBusinesses((current) => [{
+          id: businessId,
+          placeId,
+          name: result.businessName ?? business.name,
+          address: business.address,
+          averageRating: result.averageRating ?? business.averageRating,
+          totalReviews: result.totalReviews ?? business.totalReviews,
+        }, ...current.filter((item) => item.id !== businessId)]);
+        setReviewLoadStatus({
+          state: 'complete',
+          message: `${result.reviewsFetched ?? 0} latest reviews fetched · ${refreshedReviews.length} stored`,
+        });
+      } catch (error) {
+        setReviewLoadStatus({
+          state: 'error',
+          message: error instanceof Error ? error.message : 'Review fetch failed',
+        });
+      } finally {
+        setReviewFetching(false);
+      }
+    },
     onSelectBusiness: async (option: BusinessOption) => {
       let id = option.id;
       if (option.source === 'google') {
-        setAddedBusinesses((current) => [{ id, name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 }, ...current.filter((b) => b.id !== id)]);
+        setAddedBusinesses((current) => [{ id, placeId: option.placeId ?? '', name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 }, ...current.filter((b) => b.id !== id)]);
         setBusinessIds((current) => ({ ...current, [selectedId]: id }));
-        setReviewLoadStatus({ state: 'loading', message: 'Fetching reviews…' });
+        setReviewLoadStatus({ state: 'loading', message: 'Selecting business…' });
         try {
           const response = await fetch('/api/v1/businesses', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(option),
           });
           const savedBusiness = await response.json();
-          if (!response.ok) throw new Error(savedBusiness.message ?? savedBusiness.error ?? 'Could not fetch reviews');
+          if (!response.ok) throw new Error(savedBusiness.message ?? savedBusiness.error ?? 'Could not select business');
           id = savedBusiness.id;
           const reviews = savedBusiness.reviews ?? [];
-          setAddedBusinesses((current) => [{ id, name: savedBusiness.name, address: savedBusiness.address, averageRating: savedBusiness.averageRating, totalReviews: savedBusiness.totalReviews }, ...current.filter((b) => b.id !== id && b.id !== option.id)]);
+          setAddedBusinesses((current) => [{ id, placeId: savedBusiness.placeId, name: savedBusiness.name, address: savedBusiness.address, averageRating: savedBusiness.averageRating, totalReviews: savedBusiness.totalReviews }, ...current.filter((b) => b.id !== id && b.id !== option.id)]);
           setLoadedReviews((current) => ({ ...current, [id]: reviews }));
-          setReviewLoadStatus({ state: 'complete', message: `${reviews.length} reviews loaded` });
+          setReviewLoadStatus(reviews.length > 0
+            ? { state: 'complete', message: `${reviews.length} reviews available` }
+            : null);
         } catch (error) {
           setAddedBusinesses((current) => current.filter((b) => b.id !== option.id));
           setBusinessIds((current) => ({ ...current, [selectedId]: selected.businessId }));
-          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Review fetch failed' });
+          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Business selection failed' });
           return;
         }
       }

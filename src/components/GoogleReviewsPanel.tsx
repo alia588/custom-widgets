@@ -158,12 +158,14 @@ interface GoogleReviewsPanelProps {
   reviews?: Review[];
 }
 
+const EMPTY_REVIEWS: Review[] = [];
+
 export function GoogleReviewsPanel({
   isOpen,
   onClose,
   config = defaultWidgetConfig,
   business,
-  reviews = [],
+  reviews,
 }: GoogleReviewsPanelProps) {
   const [visibleCount, setVisibleCount] = useState(config.drawerReviewsPerPage);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
@@ -202,9 +204,11 @@ export function GoogleReviewsPanel({
   const fullStars = Math.floor(businessInfo.averageRating);
   const hasHalfStar = businessInfo.averageRating % 1 >= 0.5;
 
+  const reviewItems = reviews ?? EMPTY_REVIEWS;
+
   const filtered = useMemo(() => {
     const excluded = new Set(config.excludedReviewIds);
-    return reviews
+    return reviewItems
       .filter((r) => r.rating >= config.minRating)
       .filter((r) => !excluded.has(r.id))
       .filter((r) => {
@@ -214,12 +218,19 @@ export function GoogleReviewsPanel({
       })
       .sort(reviewComparator(config))
       .slice(0, config.maxReviews);
-  }, [reviews, config.minRating, config.excludedReviewIds, config.imageFiltering, config.sortBy, config.maxReviews]);
+  }, [reviewItems, config.minRating, config.excludedReviewIds, config.imageFiltering, config.sortBy, config.maxReviews]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
-  const isLoadingReviews = reviews.length === 0;
+  const isLoadingReviews = reviews === undefined;
+  const hasNoFetchedReviews = !isLoadingReviews && reviewItems.length === 0;
+  const hasNoMatchingReviews = !isLoadingReviews && reviewItems.length > 0 && filtered.length === 0;
+  const emptyReviewMessage = hasNoFetchedReviews
+    ? 'No reviews fetched yet.'
+    : hasNoMatchingReviews
+      ? 'No reviews match the current filters.'
+      : null;
 
   const overlayStyle: CSSProperties = {
     position: 'fixed',
@@ -409,6 +420,18 @@ export function GoogleReviewsPanel({
                   }}
                 >
                   Loading reviews…
+                </div>
+              ) : emptyReviewMessage ? (
+                <div
+                  style={{
+                    padding: '40px 0',
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    color: config.drawerTextColor,
+                    opacity: 0.6,
+                  }}
+                >
+                  {emptyReviewMessage}
                 </div>
               ) : (
                 <>

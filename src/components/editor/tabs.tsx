@@ -15,6 +15,7 @@ import {
   Toggle,
 } from './controls';
 import { ExcludeReviewsPicker } from './ExcludeReviewsPicker';
+import { ReviewFetchButton } from './ReviewFetchButton';
 
 export interface BusinessOption {
   id: string;
@@ -38,6 +39,9 @@ export interface TabProps {
   widgetName: string;
   onNameChange: (name: string) => void;
   reviewLoadStatus?: { state: 'loading' | 'complete' | 'error'; message: string } | null;
+  hasReviews?: boolean;
+  reviewFetching?: boolean;
+  onFetchReviews?: () => void | Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +59,9 @@ export function ContentTab({
   widgetName,
   onNameChange,
   reviewLoadStatus,
+  hasReviews = false,
+  reviewFetching = false,
+  onFetchReviews,
 }: TabProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
@@ -131,11 +138,12 @@ export function ContentTab({
             </div>
             <button
               type="button"
+              disabled={reviewLoadStatus?.state === 'loading'}
               onClick={() => {
                 setPickerOpen((o) => !o);
                 setPickerQuery('');
               }}
-              className="flex-shrink-0 self-start text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              className="flex-shrink-0 self-start text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {selectedBusinessId ? 'Change' : 'Choose'}
             </button>
@@ -194,6 +202,14 @@ export function ContentTab({
               </>
             )}
           </div>
+          {selectedBusinessId && onFetchReviews && (
+            <ReviewFetchButton
+              hasReviews={hasReviews}
+              loading={reviewFetching}
+              disabled={reviewLoadStatus?.state === 'loading'}
+              onClick={() => void onFetchReviews()}
+            />
+          )}
         </Card>
       </Section>
 

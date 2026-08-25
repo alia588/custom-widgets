@@ -1,5 +1,6 @@
 import { fetchAllScrapeDoReviews } from './scrapedo';
 import { supabase } from './db';
+import { mapReviewRow, type ApiReview } from './widget-mappers';
 
 export interface SyncResult {
   businessId: string;
@@ -10,6 +11,8 @@ export interface SyncResult {
   totalReviews: number | null;
   averageRating: number | null;
   widgetsUpdated: number;
+  reviewsFetched: number;
+  reviews: ApiReview[];
   syncedAt: string;
 }
 
@@ -39,20 +42,19 @@ export async function syncBusinessReviews(
   }
 
   // 2. Fetch from Scrape.do (paginated, up to 20 reviews per request).
-  // highest_rating keeps the cache aligned with widgets that filter "5 stars only".
+  // Sync newest-first so a one-page refresh always captures the latest reviews.
   const { reviews, place_info, fetchedPages } = await fetchAllScrapeDoReviews(
     placeId,
     token,
     maxReviews,
-    'highest_rating'
+    'newest'
   );
 
-  // 3. Replace the stored snapshot for this business.
-  // google_review_id stays stable across syncs, so widget exclusion lists
-  // (which store those IDs) keep working.
+  // 3. Upsert the fetched page. Never delete the existing snapshot: review IDs
+  // are stable, so refreshes update known rows and insert only new ones.
   const deduped = new Map(
     reviews.map((r) => [
-      r.review_id ?? `${r.user?.name ?? 'anon'}|${r.date ?? ''}|${(r.snippet ?? '').slice(0, 40)}`,
+      r.review_id ?? `${business.id}|${r.user?.name ?? 'anon'}|${r.date ?? ''}|${(r.snippet ?? '').slice(0, 40)}`,
       r,
     ])
   );
@@ -68,12 +70,33 @@ export async function syncBusinessReviews(
     images: r.images ?? [],
   }));
 
-  await supabase.from('reviews').delete().eq('business_id', business.id);
-
   if (rows.length > 0) {
-    const { error: insertError } = await supabase.from('reviews').insert(rows);
-    if (insertError) throw new Error(`Review insert failed: ${insertError.message}`);
+    const { error: upsertError } = await supabase
+      .from('reviews')
+      .upsert(rows, { onConflict: 'google_review_id' });
+    if (upsertError) throw new Error(`Review upsert failed: ${upsertError.message}`);
   }
+
+  const { data: storedRows, error: storedReviewsError } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('business_id', business.id);
+
+  if (storedReviewsError) {
+    throw new Error(`Stored reviews read failed: ${storedReviewsError.message}`);
+  }
+
+  const storedById = new Map(
+    (storedRows ?? []).map((row) => [row.google_review_id as string, row])
+  );
+  const fetchedIds = new Set(rows.map((row) => row.google_review_id));
+  const orderedStoredRows = [
+    ...rows.flatMap((row) => {
+      const stored = storedById.get(row.google_review_id);
+      return stored ? [stored] : [];
+    }),
+    ...(storedRows ?? []).filter((row) => !fetchedIds.has(row.google_review_id)),
+  ];
 
   // 4. Update business figures from Google
   const totalReviews = place_info?.reviews ?? null;
@@ -90,15 +113,7 @@ export async function syncBusinessReviews(
 
   // 5. Snapshot into each widget's cached_reviews for the embed script
   // (both the badge and the carousel read from this cache)
-  const cached = rows.map((r) => ({
-    id: r.google_review_id,
-    authorName: r.author_name,
-    authorPhotoUrl: r.author_photo_url,
-    rating: r.rating,
-    text: r.text,
-    relativeTime: r.relative_time,
-    images: r.images,
-  }));
+  const cached = orderedStoredRows.map(mapReviewRow);
 
   const { data: updatedWidgets } = await supabase
     .from('widgets')
@@ -115,10 +130,12 @@ export async function syncBusinessReviews(
     businessName: business.name,
     placeId,
     pagesFetched: fetchedPages,
-    reviewsStored: rows.length,
+    reviewsStored: cached.length,
     totalReviews,
     averageRating,
     widgetsUpdated: updatedWidgets?.length ?? 0,
+    reviewsFetched: rows.length,
+    reviews: cached,
     syncedAt: new Date().toISOString(),
   };
 }
