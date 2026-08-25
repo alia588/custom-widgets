@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/require-admin';
 import { supabase } from '@/lib/db';
-import { syncBusinessReviews } from '@/lib/sync-reviews';
 import { mapReviewRow } from '@/lib/widget-mappers';
 
 export async function POST(request: Request) {
@@ -32,29 +31,10 @@ export async function POST(request: Request) {
     .from('reviews')
     .select('*')
     .eq('business_id', data.id);
-  let reviewRows = reviewsResult.data;
+  const reviewRows = reviewsResult.data;
 
   if (reviewsResult.error) {
     return NextResponse.json({ error: reviewsResult.error.message }, { status: 500 });
-  }
-
-  let synced = false;
-  if (!reviewRows?.length) {
-    try {
-      await syncBusinessReviews(data.place_id, 40);
-      synced = true;
-      const refreshed = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('business_id', data.id);
-      if (refreshed.error) throw refreshed.error;
-      reviewRows = refreshed.data;
-    } catch (syncError) {
-      return NextResponse.json({
-        error: 'The business was selected, but its reviews could not be fetched.',
-        message: syncError instanceof Error ? syncError.message : 'Review sync failed',
-      }, { status: 502 });
-    }
   }
 
   const { data: refreshedBusiness } = await supabase
@@ -72,6 +52,6 @@ export async function POST(request: Request) {
     averageRating: Number(business.average_rating),
     totalReviews: business.total_reviews,
     reviews: (reviewRows ?? []).map(mapReviewRow),
-    synced,
+    hasReviews: (reviewRows?.length ?? 0) > 0,
   });
 }

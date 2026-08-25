@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { syncBusinessReviews } from '@/lib/sync-reviews';
 import { requireAdmin } from '@/lib/require-admin';
 
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
@@ -17,7 +19,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await syncBusinessReviews(placeId, body.maxReviews ?? 40);
+    // Manual sync only: business selection never calls this endpoint.
+    // Scrape.do returns at most 20 reviews per page, so this may fetch 25 pages.
+    const result = await syncBusinessReviews(placeId, 500);
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

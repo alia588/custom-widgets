@@ -13,6 +13,7 @@ import type { BusinessOption } from './tabs';
 export interface EditorWidget {
   widgetId: string;
   businessId: string;
+  placeId: string;
   widgetName: string;
   initialConfig: WidgetConfig;
   business: BusinessInfo;
@@ -89,9 +90,10 @@ export function WidgetEditor({
   const [activeTab, setActiveTab] = useState<EditorTab>('content');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [newBusiness, setNewBusiness] = useState<(BusinessInfo & { id: string }) | null>(null);
+  const [newBusiness, setNewBusiness] = useState<(BusinessInfo & { id: string; placeId: string }) | null>(null);
   const [selectedReviews, setSelectedReviews] = useState<Review[] | null>(null);
   const [reviewLoadStatus, setReviewLoadStatus] = useState<{ state: 'loading' | 'complete' | 'error'; message: string } | null>(null);
+  const [reviewFetching, setReviewFetching] = useState(false);
 
   const selected = items.find((i) => i.widgetId === selectedId);
 
@@ -105,6 +107,9 @@ export function WidgetEditor({
 
   const config = configs[selectedId] ?? selected.initialConfig;
   const widgetName = names[selectedId] ?? selected.widgetName;
+  const currentBusiness = newBusiness ?? selected.business;
+  const currentReviews = selectedReviews ?? selected.reviews;
+  const currentPlaceId = newBusiness?.placeId ?? selected.placeId;
 
   const update = <K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
     setConfigs((c) => ({ ...c, [selectedId]: { ...config, [key]: value } }));
@@ -154,32 +159,75 @@ export function WidgetEditor({
       setNames((current) => ({ ...current, [selectedId]: name }));
       setSaved(false);
     },
-    businessName: newBusiness?.name ?? selected.business.name,
-    businessAddress: newBusiness?.address ?? selected.business.address,
-    reviews: selectedReviews ?? selected.reviews,
+    businessName: currentBusiness.name,
+    businessAddress: currentBusiness.address,
+    reviews: currentReviews,
     reviewLoadStatus,
+    hasReviews: currentReviews.length > 0,
+    reviewFetching,
     businesses: [],
     selectedBusinessId: newBusiness?.id ?? selected.businessId,
+    onFetchReviews: async () => {
+      if (!currentPlaceId || reviewFetching) return;
+
+      setReviewFetching(true);
+      setReviewLoadStatus({ state: 'loading', message: 'Fetching up to the latest 500 reviews…' });
+      try {
+        const response = await fetch('/api/v1/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId: currentPlaceId }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.message ?? result.error ?? 'Review fetch failed');
+        }
+
+        const refreshedReviews = (result.reviews ?? []) as Review[];
+        setSelectedReviews(refreshedReviews);
+        setNewBusiness({
+          id: newBusiness?.id ?? selected.businessId,
+          placeId: currentPlaceId,
+          name: result.businessName ?? currentBusiness.name,
+          address: currentBusiness.address,
+          averageRating: result.averageRating ?? currentBusiness.averageRating,
+          totalReviews: result.totalReviews ?? currentBusiness.totalReviews,
+        });
+        setReviewLoadStatus({
+          state: 'complete',
+          message: `${result.reviewsFetched ?? 0} latest reviews fetched · ${refreshedReviews.length} stored`,
+        });
+      } catch (error) {
+        setReviewLoadStatus({
+          state: 'error',
+          message: error instanceof Error ? error.message : 'Review fetch failed',
+        });
+      } finally {
+        setReviewFetching(false);
+      }
+    },
     onSelectBusiness: async (option: BusinessOption) => {
       if (option.source === 'google') {
-        setNewBusiness({ id: option.id, name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 });
+        setNewBusiness({ id: option.id, placeId: option.placeId ?? '', name: option.name, address: option.address, averageRating: option.averageRating ?? 0, totalReviews: option.totalReviews ?? 0 });
         setSelectedReviews([]);
-        setReviewLoadStatus({ state: 'loading', message: 'Fetching reviews…' });
+        setReviewLoadStatus({ state: 'loading', message: 'Selecting business…' });
         try {
           const response = await fetch('/api/v1/businesses', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(option),
           });
           const business = await response.json();
-          if (!response.ok) throw new Error(business.message ?? business.error ?? 'Could not fetch reviews');
+          if (!response.ok) throw new Error(business.message ?? business.error ?? 'Could not select business');
           const reviews = business.reviews ?? [];
-          setNewBusiness({ id: business.id, name: business.name, address: business.address, averageRating: business.averageRating, totalReviews: business.totalReviews });
+          setNewBusiness({ id: business.id, placeId: business.placeId, name: business.name, address: business.address, averageRating: business.averageRating, totalReviews: business.totalReviews });
           setSelectedReviews(reviews);
-          setReviewLoadStatus({ state: 'complete', message: `${reviews.length} reviews loaded` });
+          setReviewLoadStatus(reviews.length > 0
+            ? { state: 'complete', message: `${reviews.length} reviews available` }
+            : null);
         } catch (error) {
           setNewBusiness(null);
           setSelectedReviews(null);
-          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Review fetch failed' });
+          setReviewLoadStatus({ state: 'error', message: error instanceof Error ? error.message : 'Business selection failed' });
         }
       } else {
         const item = items.find((i) => i.businessId === option.id);
@@ -207,8 +255,8 @@ export function WidgetEditor({
             key={selectedId}
             widgetId={selectedId}
             config={config}
-            business={newBusiness ?? selected.business}
-            reviews={selectedReviews ?? selected.reviews}
+            business={currentBusiness}
+            reviews={currentReviews}
             preview={config.position !== 'inline'}
           />
         </div>

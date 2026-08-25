@@ -22,6 +22,14 @@ export interface ScrapeDoPlaceInfo {
   type?: string;
 }
 
+// The live API currently reports these accepted values in its 400 response.
+// Scrape.do's public documentation still lists older camel-case values.
+export type ScrapeDoReviewSort =
+  | 'relevance'
+  | 'newest'
+  | 'highest_rating'
+  | 'lowest_rating';
+
 interface ScrapeDoPage {
   reviews?: ScrapeDoReview[];
   place_info?: ScrapeDoPlaceInfo;
@@ -35,7 +43,7 @@ async function fetchPage(
   token: string,
   num: number,
   pageToken?: string,
-  sortBy?: string
+  sortBy?: ScrapeDoReviewSort
 ): Promise<ScrapeDoPage> {
   const url = new URL(ENDPOINT);
   url.searchParams.set('token', token);
@@ -62,7 +70,7 @@ export async function fetchAllScrapeDoReviews(
   placeId: string,
   token: string,
   maxReviews = 40,
-  sortBy?: string
+  sortBy?: ScrapeDoReviewSort
 ): Promise<{
   reviews: ScrapeDoReview[];
   place_info?: ScrapeDoPlaceInfo;

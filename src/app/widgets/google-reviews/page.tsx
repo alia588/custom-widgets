@@ -41,6 +41,7 @@ export default async function GoogleReviewsWidgetPage({
     return {
       widgetId: w.id,
       businessId: w.business_id,
+      placeId: business.place_id,
       widgetName: w.name,
       initialConfig: configFromDbRow(w),
       business: businessInfo,
@@ -52,6 +53,7 @@ export default async function GoogleReviewsWidgetPage({
     items.unshift({
       widgetId: 'new',
       businessId: '',
+      placeId: '',
       widgetName: 'Google Reviews Badge',
       initialConfig: defaultWidgetConfig,
       business: { name: '', address: '', totalReviews: 0, averageRating: 0 },
