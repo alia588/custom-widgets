@@ -39,6 +39,8 @@ export interface BeforeAfterConfig {
   // Settings
   captureTouchMode: boolean;
   autoSlide: boolean;
+  /** Seconds per leg of the auto-slide animation (one 25%<->75% sweep). */
+  animationDuration: number;
 }
 
 export const defaultBeforeAfterConfig: BeforeAfterConfig = {
@@ -67,6 +69,7 @@ export const defaultBeforeAfterConfig: BeforeAfterConfig = {
 
   captureTouchMode: true,
   autoSlide: false,
+  animationDuration: 3,
 };
 
 // ---------------------------------------------------------------------------
@@ -102,6 +105,7 @@ export function beforeAfterFromDbRow(row: Record<string, any>): BeforeAfterConfi
 
     captureTouchMode: row.capture_touch_mode ?? true,
     autoSlide: row.auto_slide ?? false,
+    animationDuration: row.animation_duration >= 1 ? row.animation_duration : 3,
   };
 }
 
@@ -132,6 +136,11 @@ export function beforeAfterToDbRow(config: BeforeAfterConfig): Record<string, un
 
     capture_touch_mode: config.captureTouchMode,
     auto_slide: config.autoSlide,
+    // 0 / invalid (e.g. cleared input) falls back to the 3s default.
+    animation_duration:
+      Number.isFinite(config.animationDuration) && config.animationDuration >= 1
+        ? Math.round(config.animationDuration)
+        : 3,
 
     updated_at: new Date().toISOString(),
   };

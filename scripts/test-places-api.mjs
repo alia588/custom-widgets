@@ -12,7 +12,7 @@ try {
 const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // Default test place: Googleplex (known to have many reviews)
-const DEFAULT_PLACE_ID = 'ChIJj61dQgK6j4AR4GeOYWZ8cw';
+const DEFAULT_PLACE_ID = 'ChIJj61dQgK6j4AR4GeTYWZsKWw';
 const placeId = process.argv[2] || DEFAULT_PLACE_ID;
 
 if (!API_KEY) {
