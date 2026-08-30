@@ -89,6 +89,11 @@ export function BeforeAfterWidget({
   const containerRef = useRef<HTMLDivElement>(null);
   const animationStart = config.sliderPosition >= 50 ? 75 : 25;
   const animationEnd = animationStart === 75 ? 25 : 75;
+  // Configured in seconds; used for both the CSS transition and the leg
+  // timers. 0 / invalid (cleared input) falls back to the 3s default.
+  const animationSeconds = config.animationDuration >= 1 ? config.animationDuration : 3;
+  const animationMs = animationSeconds * 1000;
+  const transition = `${animationSeconds}s ease-in-out`;
   const [position, setPosition] = useState(config.sliderPosition);
   const [isAutoAnimating, setIsAutoAnimating] = useState(false);
   const [animationStarted, setAnimationStarted] = useState(false);
@@ -148,17 +153,17 @@ export function BeforeAfterWidget({
     }, 100);
     const returnTrip = window.setTimeout(() => {
       if (animationRunRef.current === run) setPosition(animationStart);
-    }, 3100);
+    }, animationMs + 100);
     const finish = window.setTimeout(() => {
       if (animationRunRef.current === run) setIsAutoAnimating(false);
-    }, 6100);
+    }, animationMs * 2 + 100);
     return () => {
       window.clearTimeout(begin);
       window.clearTimeout(outward);
       window.clearTimeout(returnTrip);
       window.clearTimeout(finish);
     };
-  }, [animationEnd, animationStart, animationStarted, config.autoSlide, config.sliderPosition]);
+  }, [animationEnd, animationMs, animationStart, animationStarted, config.autoSlide, config.sliderPosition]);
 
   const clamp = (v: number) => Math.min(100, Math.max(0, v));
 
@@ -274,7 +279,7 @@ export function BeforeAfterWidget({
             position: 'absolute',
             inset: 0,
             clipPath: `inset(0 ${100 - position}% 0 0)`,
-            transition: isAutoAnimating ? 'clip-path 3s ease-in-out' : undefined,
+            transition: isAutoAnimating ? `clip-path ${transition}` : undefined,
             zIndex: 1,
           }}
         >
@@ -293,7 +298,7 @@ export function BeforeAfterWidget({
             background: '#FFFFFF',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: isAutoAnimating ? 'left 3s ease-in-out' : undefined,
+            transition: isAutoAnimating ? `left ${transition}` : undefined,
           }}
         />
         <div
@@ -312,7 +317,7 @@ export function BeforeAfterWidget({
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)',
             zIndex: 2,
             pointerEvents: 'none',
-            transition: isAutoAnimating ? 'left 3s ease-in-out' : undefined,
+            transition: isAutoAnimating ? `left ${transition}` : undefined,
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2.5">

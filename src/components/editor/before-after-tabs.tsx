@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BeforeAfterConfig } from '@/lib/before-after-config';
+import { Input as KitInput } from '@/components/ui';
 import {
   Card,
   ColorField,
@@ -369,6 +370,42 @@ export function LayoutTab({ config, update }: BeforeAfterTabProps) {
 // Settings tab
 // ---------------------------------------------------------------------------
 
+// Number input that can be fully cleared while typing. An empty field is
+// stored as 0 and normalized to the default (3s) on save / at runtime.
+function ClearableSecondsInput({
+  value,
+  min = 1,
+  max = 30,
+  onChange,
+}: {
+  value: number;
+  min?: number;
+  max?: number;
+  onChange: (v: number) => void;
+}) {
+  const [text, setText] = useState(value >= 1 ? String(value) : '');
+
+  // Sync with external value changes (e.g. switching widgets) without
+  // clobbering an in-progress edit.
+  useEffect(() => {
+    setText((t) => (Number(t) === value || (t === '' && value < 1) ? t : String(value)));
+  }, [value]);
+
+  return (
+    <KitInput
+      type="number"
+      value={text}
+      min={min}
+      max={max}
+      onChange={(e) => {
+        const v = e.target.value;
+        setText(v);
+        onChange(v === '' ? 0 : Number(v));
+      }}
+    />
+  );
+}
+
 export function SettingsTab({ config, update }: BeforeAfterTabProps) {
   return (
     <Section title="Slider Behavior">
@@ -385,6 +422,16 @@ export function SettingsTab({ config, update }: BeforeAfterTabProps) {
           label="Play One Animation Cycle"
           description="Makes one 25%–75% round trip, then stays at the starting side until dragged"
         />
+        {config.autoSlide && (
+          <Field label="Animation Duration (seconds)">
+            <ClearableSecondsInput
+              value={config.animationDuration}
+              min={1}
+              max={30}
+              onChange={(v) => update('animationDuration', v)}
+            />
+          </Field>
+        )}
       </Card>
     </Section>
   );
